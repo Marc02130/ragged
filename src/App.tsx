@@ -73,7 +73,7 @@ function App() {
   };
 
   const handleThreadDelete = (threadId: string) => {
-    if (currentThread?.thread_id === threadId) {
+    if (currentThread?.id === threadId) {
       setCurrentThread(null);
       setDocuments([]);
     }
@@ -132,7 +132,7 @@ function App() {
                   {/* Document Upload Section */}
                   <div className="p-6 border-b border-gray-200">
                     <DocumentUpload
-                      threadId={currentThread.thread_id}
+                      threadId={currentThread.id}
                       onUploadComplete={handleUploadComplete}
                     />
                   </div>
@@ -140,7 +140,7 @@ function App() {
                   {/* Chat Interface */}
                   <div className="flex-1">
                     <ChatInterface
-                      threadId={currentThread.thread_id}
+                      threadId={currentThread.id}
                       threadTitle={currentThread.title}
                     />
                   </div>

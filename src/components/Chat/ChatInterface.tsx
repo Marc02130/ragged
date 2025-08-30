@@ -37,10 +37,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       } else {
         // Convert conversations to chat messages
         const chatMessages: ChatMessage[] = data.map((conv: Conversation) => ({
-          id: conv.conv_id,
+          id: conv.id,
           role: conv.role,
           content: conv.content,
-          timestamp: conv.timestamp,
+          timestamp: conv.created_at,
         }));
         setMessages(chatMessages);
       }

@@ -1,16 +1,29 @@
-# RAG App: Document Q&A with AI
+# RAGged: Intelligent Document Q&A with AI
 
-This is a Retrieval-Augmented Generation (RAG) application that allows you to upload documents and have AI-powered conversations to query their content. It's designed for individual users, like researchers or students, who need to chat with their personal documents.
+A modern Retrieval-Augmented Generation (RAG) application that provides seamless document upload, vectorization, intelligent chat queries, and comprehensive thread management with archival capabilities. Built for individual users, researchers, and students who need to chat with their personal documents.
+
+## 🚀 Key Features
+
+- **Multi-Thread Support**: Create and manage multiple conversation threads
+- **Document Processing**: Upload and vectorize PDF, DOCX, TXT, and RTF files
+- **Intelligent Chat**: Context-aware responses using RAG with source attribution
+- **Thread Archival**: Complete conversation preservation with vectorized archives
+- **Cross-Thread Search**: Search across multiple threads for relevant context
+- **Real-time Interface**: Modern React UI with drag-and-drop file upload
+- **Secure Authentication**: Supabase Auth with JWT-based security
+- **Vector Search**: Efficient similarity search using pgvector
 
 ---
 
-### Features
+### Core Features
 
-* **Secure User Authentication:** Sign up or log in with your email and password, or use OAuth for easy access.
-* **Thread Management:** Create and manage separate conversations for different topics or documents.
-* **Document Uploads:** Securely upload documents (PDF, DOCX, DOC, TXT, RTF) up to 10MB per file on a per-thread basis. The app then processes and vectorizes the content to prepare it for querying.
-* **AI-Powered Chat:** Ask questions and get answers from your documents using a chat interface. The application uses your chat history and uploaded documents to provide accurate, relevant responses. Chat history is automatically vectorized for better context recall.
-* **Data Privacy:** All your documents and conversations are securely scoped to your user ID, ensuring your data remains private.
+* **Secure User Authentication:** Sign up or log in with your email and password, with JWT-based session management.
+* **Multi-Thread Management:** Create and manage separate conversations for different topics or documents with full CRUD operations.
+* **Document Uploads:** Securely upload documents (PDF, DOCX, TXT, RTF) up to 10MB per file with drag-and-drop interface and progress tracking.
+* **AI-Powered Chat:** Ask questions and get context-aware answers using RAG with source attribution and similarity scores.
+* **Thread Archival:** Complete conversation preservation with vectorized archives for future reference.
+* **Cross-Thread Search:** Intelligent search across multiple threads for comprehensive context retrieval.
+* **Data Privacy:** All data is securely scoped to your user ID with Row Level Security (RLS).
 
 ---
 
@@ -32,30 +45,41 @@ The application is built with a modular, API-first approach to ensure a scalable
 * A Supabase account and project configured with PGVector extension enabled.
 * An OpenAI API key with access to GPT-4 and text-embedding-ada-002 models.
 
-#### Installation
+#### Quick Start
 1.  Clone the repository:
     ```bash
     git clone [repository URL]
+    cd ragged
     ```
-2.  Navigate to the project directory:
+2.  Copy environment template and configure:
     ```bash
-    cd [project folder]
+    cp env.example .env
+    # Edit .env with your credentials
     ```
 3.  Install dependencies:
     ```bash
     npm install
     ```
+4.  Deploy backend (requires Supabase CLI):
+    ```bash
+    ./scripts/deploy.sh
+    ```
+5.  Start development server:
+    ```bash
+    npm run dev
+    ```
 
 #### Configuration
-1.  Copy `env.example` to `.env` and configure your credentials:
-    * `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
-    * `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+1.  Configure your environment variables in `.env`:
+    * `VITE_SUPABASE_URL` - Your Supabase project URL
+    * `VITE_SUPABASE_ANON_KEY` - Your Supabase anon key
     * `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
     * `OPENAI_API_KEY` - Your OpenAI API key
-    * `OPENAI_EMBEDDING_MODEL` - Set to `text-embedding-ada-002`
-    * `OPENAI_COMPLETION_MODEL` - Set to `gpt-4` or `gpt-3.5-turbo`
-2.  Deploy the necessary database tables and Edge Functions to your Supabase project. The required tables are `user_info`, `threads`, `documents`, `conversations`, and `vector_chunks`.
-3.  Ensure Row Level Security (RLS) is enabled and properly configured on your Supabase tables to enforce data isolation by `user_id` and `thread_id`.
+2.  The deployment script automatically sets up:
+    * Database migrations with proper schema
+    * Edge Functions for vectorization, RAG queries, and thread management
+    * Row Level Security (RLS) policies
+    * Storage buckets and policies
 
 #### Development
 ```bash
@@ -74,19 +98,46 @@ npm run preview
 ### How to Use
 
 1.  **Sign Up / Log In:** Access the application and create a new account or log in with your credentials.
-2.  **Create a New Thread:** Start a new conversation by creating a thread.
-3.  **Upload Documents:** Within a thread, upload the documents you want to query. The system will automatically process them.
-4.  **Start Chatting:** Once your documents are processed, you can begin asking questions in the chat interface. The AI will use your documents to generate responses.
-5.  **Manage Threads:** You can view, switch between, and delete your threads. Deleting a thread will archive the conversation history for your reference while deleting the live chat data.
+2.  **Create a New Thread:** Start a new conversation by creating a thread with a descriptive title.
+3.  **Upload Documents:** Within a thread, drag and drop or browse to upload documents (PDF, DOCX, TXT, RTF). The system automatically processes and vectorizes them.
+4.  **Start Chatting:** Once documents are processed, ask questions in the chat interface. The AI provides context-aware responses with source attribution.
+5.  **Manage Threads:** View, switch between, archive, and delete threads. Deletion archives conversation history for future reference.
+6.  **Cross-Thread Search:** The AI can search across multiple threads for comprehensive context when answering questions.
 
 ---
 
 ### Tech Stack
 
 * **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
-* **Backend:** Supabase Edge Functions (TypeScript)
+* **Backend:** Supabase Edge Functions (TypeScript/Deno)
 * **Database:** Supabase Postgres with PGVector extension
-* **Storage:** Supabase Storage
+* **Storage:** Supabase Storage with user-scoped buckets
 * **AI:** OpenAI API (GPT-4, text-embedding-ada-002)
-* **Document Processing:** Langchain.js
-* **Authentication:** Supabase Auth
+* **Document Processing:** Langchain.js with optimized chunking
+* **Authentication:** Supabase Auth with JWT tokens
+* **Vector Search:** Efficient similarity search with pgvector
+
+---
+
+## 📚 Documentation
+
+- [Integration Guide](INTEGRATION_GUIDE.md) - Complete integration documentation
+- [API Reference](docs/API.md) - Edge Function API documentation
+- [Database Schema](docs/DATABASE.md) - Database structure and relationships
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
+
+## 🔒 Security Features
+
+- **Row Level Security**: All data is user-scoped
+- **JWT Authentication**: Secure API access
+- **File Validation**: Upload security and type checking
+- **Rate Limiting**: API protection against abuse
+- **Data Privacy**: Complete user data isolation
+
+## 📊 Performance Optimizations
+
+- **Efficient Vector Search**: Optimized similarity queries
+- **Batch Processing**: Large document handling
+- **Caching**: Intelligent response caching
+- **Lazy Loading**: Frontend performance optimization
+- **Connection Pooling**: Database performance

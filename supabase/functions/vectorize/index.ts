@@ -20,6 +20,34 @@ interface VectorizationRequest {
   }
 }
 
+// User preferences interface
+interface UserPreferences {
+  rag?: {
+    default_model?: string
+    temperature?: number
+    max_tokens?: number
+    include_chat_history?: boolean
+    cross_thread_search?: boolean
+    similarity_threshold?: number
+  }
+  processing?: {
+    chunk_size?: number
+    chunk_overlap?: number
+    max_chunks_per_document?: number
+  }
+  ui?: {
+    theme?: string
+    compact_mode?: boolean
+    show_sources?: boolean
+    auto_scroll?: boolean
+  }
+  notifications?: {
+    email_notifications?: boolean
+    processing_complete?: boolean
+    error_alerts?: boolean
+  }
+}
+
 interface VectorizationResponse {
   success: boolean
   message: string
@@ -53,12 +81,63 @@ const embeddings = new OpenAIEmbeddings({
 })
 
 /**
+ * Enhanced authentication and user preferences validation
+ */
+async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user: any; preferences: UserPreferences; error?: string }> {
+  try {
+    console.log(`[AUTH] Validating authentication...`)
+    
+    if (!authHeader) {
+      return { user: null, preferences: {}, error: 'Authorization header required' }
+    }
+
+    // Get user from JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    
+    if (authError || !user) {
+      console.error(`[AUTH] ❌ Authentication failed:`, authError?.message)
+      return { user: null, preferences: {}, error: 'Invalid authentication token' }
+    }
+
+    console.log(`[AUTH] ✅ Authentication successful for user: ${user.id}`)
+
+    // Get user preferences from database
+    console.log(`[AUTH] Fetching user preferences...`)
+    const { data: preferences, error: prefsError } = await supabase
+      .rpc('get_user_preferences', { p_user_id: user.id })
+
+    if (prefsError) {
+      console.warn(`[AUTH] ⚠️ Failed to fetch user preferences:`, prefsError.message)
+      // Continue with default preferences
+      return { 
+        user, 
+        preferences: {
+          processing: {
+            chunk_size: 1000,
+            chunk_overlap: 200,
+            max_chunks_per_document: 1000
+          }
+        }
+      }
+    }
+
+    console.log(`[AUTH] ✅ User preferences loaded successfully`)
+    return { user, preferences: preferences || {} }
+
+  } catch (error) {
+    console.error(`[AUTH] ❌ Authentication validation error:`, error)
+    return { user: null, preferences: {}, error: 'Authentication validation failed' }
+  }
+}
+
+/**
  * Process and vectorize uploaded documents with optimization for large documents
  */
 async function vectorizeDocument(
   documentId: string, 
   userId: string, 
-  options?: VectorizationRequest['options']
+  options?: VectorizationRequest['options'],
+  preferences?: UserPreferences
 ): Promise<VectorizationResponse> {
   const startTime = Date.now()
   console.log(`[DOCUMENT VECTORIZATION] Starting vectorization for document ${documentId}, user ${userId}`)
@@ -112,10 +191,14 @@ async function vectorizeDocument(
       .update({ status: 'processing' })
       .eq('id', documentId)
 
-    // Use provided options or defaults
-    const chunkSize = options?.chunkSize || VECTORIZATION_CONFIG.DEFAULT_CHUNK_SIZE
-    const chunkOverlap = options?.chunkOverlap || VECTORIZATION_CONFIG.DEFAULT_CHUNK_OVERLAP
-    const maxChunks = options?.maxChunks || VECTORIZATION_CONFIG.MAX_CHUNKS_PER_DOCUMENT
+    // Use user preferences, provided options, or defaults
+    const userChunkSize = preferences?.processing?.chunk_size
+    const userChunkOverlap = preferences?.processing?.chunk_overlap
+    const userMaxChunks = preferences?.processing?.max_chunks_per_document
+    
+    const chunkSize = options?.chunkSize || userChunkSize || VECTORIZATION_CONFIG.DEFAULT_CHUNK_SIZE
+    const chunkOverlap = options?.chunkOverlap || userChunkOverlap || VECTORIZATION_CONFIG.DEFAULT_CHUNK_OVERLAP
+    const maxChunks = options?.maxChunks || userMaxChunks || VECTORIZATION_CONFIG.MAX_CHUNKS_PER_DOCUMENT
     const batchSize = options?.batchSize || VECTORIZATION_CONFIG.BATCH_SIZE
 
     console.log(`[DOCUMENT VECTORIZATION] Configuration:`, {
@@ -753,30 +836,21 @@ serve(async (req) => {
   }
 
   try {
-    console.log(`[EDGE FUNCTION] Verifying authentication...`)
+    console.log(`[EDGE FUNCTION] Verifying authentication and loading user preferences...`)
     
-    // Verify authentication
+    // Enhanced authentication with user preferences
     const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      console.error(`[EDGE FUNCTION] ❌ No authorization header provided`)
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get user from JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    const { user, preferences, error: authError } = await validateAuthAndGetPreferences(authHeader || '')
     
     if (authError || !user) {
-      console.error(`[EDGE FUNCTION] ❌ Authentication failed:`, authError?.message)
+      console.error(`[EDGE FUNCTION] ❌ Authentication failed:`, authError)
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication token' }),
+        JSON.stringify({ error: authError || 'Authentication failed' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`[EDGE FUNCTION] ✅ Authentication successful for user: ${user.id}`)
+    console.log(`[EDGE FUNCTION] ✅ Authentication and preferences loaded for user: ${user.id}`)
 
     // Parse request body
     console.log(`[EDGE FUNCTION] Parsing request body...`)
@@ -817,7 +891,7 @@ serve(async (req) => {
           )
         }
         console.log(`[EDGE FUNCTION] 📄 Starting document vectorization for document ${requestData.documentId}`)
-        result = await vectorizeDocument(requestData.documentId, requestData.userId, requestData.options)
+        result = await vectorizeDocument(requestData.documentId, requestData.userId, requestData.options, preferences)
         break
 
       case 'chat_history':

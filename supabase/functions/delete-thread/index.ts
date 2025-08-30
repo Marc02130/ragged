@@ -9,6 +9,29 @@ interface DeleteThreadRequest {
   confirmDeletion: boolean
 }
 
+// User preferences interface
+interface UserPreferences {
+  rag?: {
+    default_model?: string
+    temperature?: number
+    max_tokens?: number
+    include_chat_history?: boolean
+    cross_thread_search?: boolean
+    similarity_threshold?: number
+  }
+  ui?: {
+    theme?: string
+    compact_mode?: boolean
+    show_sources?: boolean
+    auto_scroll?: boolean
+  }
+  notifications?: {
+    email_notifications?: boolean
+    processing_complete?: boolean
+    error_alerts?: boolean
+  }
+}
+
 interface DeleteThreadResponse {
   success: boolean
   message: string
@@ -27,6 +50,56 @@ const embeddings = new OpenAIEmbeddings({
   openAIApiKey: openaiApiKey,
   modelName: 'text-embedding-ada-002'
 })
+
+/**
+ * Enhanced authentication and user preferences validation
+ */
+async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user: any; preferences: UserPreferences; error?: string }> {
+  try {
+    console.log(`[AUTH] Validating authentication...`)
+    
+    if (!authHeader) {
+      return { user: null, preferences: {}, error: 'Authorization header required' }
+    }
+
+    // Get user from JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    
+    if (authError || !user) {
+      console.error(`[AUTH] ❌ Authentication failed:`, authError?.message)
+      return { user: null, preferences: {}, error: 'Invalid authentication token' }
+    }
+
+    console.log(`[AUTH] ✅ Authentication successful for user: ${user.id}`)
+
+    // Get user preferences from database
+    console.log(`[AUTH] Fetching user preferences...`)
+    const { data: preferences, error: prefsError } = await supabase
+      .rpc('get_user_preferences', { p_user_id: user.id })
+
+    if (prefsError) {
+      console.warn(`[AUTH] ⚠️ Failed to fetch user preferences:`, prefsError.message)
+      // Continue with default preferences
+      return { 
+        user, 
+        preferences: {
+          notifications: {
+            email_notifications: false,
+            processing_complete: true,
+            error_alerts: true
+          }
+        }
+      }
+    }
+
+    console.log(`[AUTH] ✅ User preferences loaded successfully`)
+    return { user, preferences: preferences || {} }
+
+  } catch (error) {
+    console.error(`[AUTH] ❌ Authentication validation error:`, error)
+    return { user: null, preferences: {}, error: 'Authentication validation failed' }
+  }
+}
 
 /**
  * Archive thread and its complete conversation history
@@ -193,24 +266,21 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
+    console.log(`[DELETE THREAD] Verifying authentication and loading user preferences...`)
+    
+    // Enhanced authentication with user preferences
     const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
+    const { user, preferences, error: authError } = await validateAuthAndGetPreferences(authHeader || '')
+    
+    if (authError || !user) {
+      console.error(`[DELETE THREAD] ❌ Authentication failed:`, authError)
       return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
+        JSON.stringify({ error: authError || 'Authentication failed' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    // Get user from JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication token' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log(`[DELETE THREAD] ✅ Authentication and preferences loaded for user: ${user.id}`)
 
     // Parse request body
     const requestData: DeleteThreadRequest = await req.json()

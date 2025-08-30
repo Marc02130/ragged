@@ -277,9 +277,9 @@ export const ThreadList: React.FC<ThreadListProps> = ({
         <div className="divide-y divide-gray-200">
           {threadList.map((thread) => (
             <div
-              key={thread.thread_id}
+              key={thread.id}
               className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                currentThreadId === thread.thread_id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                currentThreadId === thread.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
               }`}
               onClick={() => onThreadSelect(thread)}
             >
@@ -298,7 +298,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleArchiveThread(thread.thread_id, thread.title);
+                      handleArchiveThread(thread.id, thread.title);
                     }}
                     className="p-1 text-gray-400 hover:text-yellow-500 transition-colors"
                     title="Archive thread"
@@ -310,7 +310,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteThread(thread.thread_id, thread.title);
+                      handleDeleteThread(thread.id, thread.title);
                     }}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete thread"
@@ -338,7 +338,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                 <div className="space-y-2">
                   {archivedThreads.map((thread) => (
                     <div
-                      key={thread.thread_id}
+                      key={thread.id}
                       className="p-3 bg-white rounded border border-gray-200"
                     >
                       <div className="flex items-start justify-between">
@@ -354,7 +354,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                         </div>
                         <div className="flex items-center space-x-1">
                           <button
-                            onClick={() => handleRestoreThread(thread.thread_id, thread.title)}
+                            onClick={() => handleRestoreThread(thread.id, thread.title)}
                             className="p-1 text-gray-400 hover:text-green-500 transition-colors"
                             title="Restore thread"
                           >
@@ -363,7 +363,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDeleteThread(thread.thread_id, thread.title)}
+                            onClick={() => handleDeleteThread(thread.id, thread.title)}
                             className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                             title="Delete thread permanently"
                           >

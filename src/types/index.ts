@@ -13,39 +13,44 @@ export interface UserInfo {
 
 // Thread Management Types
 export interface Thread {
-  thread_id: string;
+  id: string;
   user_id: string;
   title: string;
   status: 'active' | 'archived';
   created_at: string;
+  updated_at: string;
   last_activity_at: string;
   document_count: number;
 }
 
 // Document Types
 export interface Document {
-  doc_id: string;
+  id: string;
   thread_id: string;
   user_id: string;
   file_path: string;
   file_name: string;
   file_size: number;
   file_type: string;
+  title: string;
+  content?: string;
   vector_status: 'pending' | 'processing' | 'ready' | 'error';
-  uploaded_at: string;
-  processed_at?: string;
+  status: 'processing' | 'completed' | 'failed';
+  created_at: string;
+  updated_at: string;
   chunk_count?: number;
 }
 
 // Chat Types
 export interface Conversation {
-  conv_id: string;
+  id: string;
   thread_id: string;
   user_id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string;
+  created_at: string;
   vectorized?: boolean;
+  metadata?: Record<string, any>;
 }
 
 export interface ChatMessage {

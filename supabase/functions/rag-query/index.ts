@@ -22,6 +22,29 @@ interface RAGQueryRequest {
   currentThreadPriority?: boolean
 }
 
+// User preferences interface
+interface UserPreferences {
+  rag?: {
+    default_model?: string
+    temperature?: number
+    max_tokens?: number
+    include_chat_history?: boolean
+    cross_thread_search?: boolean
+    similarity_threshold?: number
+  }
+  ui?: {
+    theme?: string
+    compact_mode?: boolean
+    show_sources?: boolean
+    auto_scroll?: boolean
+  }
+  notifications?: {
+    email_notifications?: boolean
+    processing_complete?: boolean
+    error_alerts?: boolean
+  }
+}
+
 interface RAGQueryResponse {
   success: boolean
   response?: string
@@ -89,6 +112,59 @@ const llm = new OpenAI({
   temperature: 0.7,
   maxTokens: 1000
 })
+
+/**
+ * Enhanced authentication and user preferences validation
+ */
+async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user: any; preferences: UserPreferences; error?: string }> {
+  try {
+    console.log(`[AUTH] Validating authentication...`)
+    
+    if (!authHeader) {
+      return { user: null, preferences: {}, error: 'Authorization header required' }
+    }
+
+    // Get user from JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    
+    if (authError || !user) {
+      console.error(`[AUTH] ❌ Authentication failed:`, authError?.message)
+      return { user: null, preferences: {}, error: 'Invalid authentication token' }
+    }
+
+    console.log(`[AUTH] ✅ Authentication successful for user: ${user.id}`)
+
+    // Get user preferences from database
+    console.log(`[AUTH] Fetching user preferences...`)
+    const { data: preferences, error: prefsError } = await supabase
+      .rpc('get_user_preferences', { p_user_id: user.id })
+
+    if (prefsError) {
+      console.warn(`[AUTH] ⚠️ Failed to fetch user preferences:`, prefsError.message)
+      // Continue with default preferences
+      return { 
+        user, 
+        preferences: {
+          rag: {
+            default_model: 'gpt-4',
+            temperature: 0.7,
+            max_tokens: 1000,
+            include_chat_history: true,
+            cross_thread_search: true,
+            similarity_threshold: 0.7
+          }
+        }
+      }
+    }
+
+    console.log(`[AUTH] ✅ User preferences loaded successfully`)
+    return { user, preferences: preferences || {} }
+
+  } catch (error) {
+    console.error(`[AUTH] ❌ Authentication validation error:`, error)
+    return { user: null, preferences: {}, error: 'Authentication validation failed' }
+  }
+}
 
 /**
  * Perform RAG query with enhanced similarity search and response generation
@@ -867,30 +943,21 @@ serve(async (req) => {
   }
 
   try {
-    console.log(`[RAG EDGE FUNCTION] Verifying authentication...`)
+    console.log(`[RAG EDGE FUNCTION] Verifying authentication and loading user preferences...`)
     
-    // Verify authentication
+    // Enhanced authentication with user preferences
     const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      console.error(`[RAG EDGE FUNCTION] ❌ No authorization header provided`)
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get user from JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    const { user, preferences, error: authError } = await validateAuthAndGetPreferences(authHeader || '')
     
     if (authError || !user) {
-      console.error(`[RAG EDGE FUNCTION] ❌ Authentication failed:`, authError?.message)
+      console.error(`[RAG EDGE FUNCTION] ❌ Authentication failed:`, authError)
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication token' }),
+        JSON.stringify({ error: authError || 'Authentication failed' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`[RAG EDGE FUNCTION] ✅ Authentication successful for user: ${user.id}`)
+    console.log(`[RAG EDGE FUNCTION] ✅ Authentication and preferences loaded for user: ${user.id}`)
 
     // Parse request body
     console.log(`[RAG EDGE FUNCTION] Parsing request body...`)
