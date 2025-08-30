@@ -1,0 +1,43 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "langchain/llms/openai": "https://esm.sh/langchain@0.1.0/llms/openai",
+    "langchain/embeddings/openai": "https://esm.sh/langchain@0.1.0/embeddings/openai",
+    "std/http/server": "https://deno.land/std@0.208.0/http/server.ts"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    },
+    "include": ["**/*.ts"]
+  },
+  "fmt": {
+    "files": {
+      "include": ["**/*.ts"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 80,
+      "indentWidth": 2,
+      "semiColons": true,
+      "singleQuote": true,
+      "proseWrap": "preserve"
+    }
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --watch index.ts",
+    "start": "deno run --allow-net --allow-env index.ts",
+    "test": "deno test --allow-net --allow-env",
+    "lint": "deno lint",
+    "fmt": "deno fmt"
+  }
+} 
