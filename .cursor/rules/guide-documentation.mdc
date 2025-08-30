@@ -1,0 +1,243 @@
+# Guide Documentation Standards
+
+This rule enforces proper placement and structure of guide documentation in the project.
+
+<rule>
+name: guide_documentation
+description: Enforces guide documentation placement in the guides folder and maintains consistent structure
+
+filters:
+  - type: file_extension
+    pattern: "\\.(md|mdx|txt)$"
+  - type: content
+    pattern: "(?i)guide|documentation|tutorial|how.?to|readme"
+  - type: event
+    pattern: "file_create|file_move"
+
+actions:
+  - type: enforce
+    conditions:
+      # Enforce guides folder placement
+      - pattern: "^(?!guides/).*_GUIDE\\.md$"
+        message: "Guide documentation must be placed in the guides/ folder"
+      
+      - pattern: "^(?!guides/).*_DOCUMENTATION\\.md$"
+        message: "Documentation files must be placed in the guides/ folder"
+      
+      - pattern: "^(?!guides/).*_TUTORIAL\\.md$"
+        message: "Tutorial files must be placed in the guides/ folder"
+      
+      - pattern: "^(?!guides/).*_HOW_TO\\.md$"
+        message: "How-to guides must be placed in the guides/ folder"
+      
+      # Enforce proper naming conventions
+      - pattern: "guides/.*\\.md$"
+        message: "Guide files should use UPPER_SNAKE_CASE naming (e.g., RAG_QUERY_GUIDE.md)"
+      
+      # Enforce guide structure
+      - pattern: "guides/.*\\.md$"
+        message: "Guide files should include: Overview, Key Features, Usage Examples, Configuration, Best Practices"
+
+  - type: suggest
+    conditions:
+      - pattern: "guides/.*\\.md$"
+        message: |
+          Guide Documentation Checklist:
+          
+          1. File Location:
+             - ✅ Place in guides/ folder
+             - ✅ Use UPPER_SNAKE_CASE naming
+             - ✅ Include descriptive suffix (_GUIDE, _TUTORIAL, etc.)
+          
+          2. Structure:
+             - ✅ Overview section
+             - ✅ Key Features section
+             - ✅ Usage Examples section
+             - ✅ Configuration section
+             - ✅ Best Practices section
+             - ✅ Troubleshooting section (if applicable)
+          
+          3. Content:
+             - ✅ Clear and concise explanations
+             - ✅ Code examples with syntax highlighting
+             - ✅ Step-by-step instructions
+             - ✅ Links to related documentation
+             - ✅ Version information if applicable
+          
+          4. Formatting:
+             - ✅ Use markdown headers (# ## ###)
+             - ✅ Include code blocks with language specification
+             - ✅ Use bullet points for lists
+             - ✅ Include emojis for visual organization
+             - ✅ Add table of contents for long guides
+
+examples:
+  - description: "Correct Guide Placement"
+    input: |
+      # File: guides/RAG_QUERY_GUIDE.md
+      
+      # RAG Query System Guide
+      
+      ## Overview
+      This guide explains the RAG query system...
+      
+      ## Key Features
+      - Vector-based retrieval
+      - Contextual responses
+      - Chat history management
+      
+      ## Usage Examples
+      ```typescript
+      const result = await performRAGQuery(threadId, userId, query);
+      ```
+      
+      ## Configuration
+      ```typescript
+      const RAG_CONFIG = {
+        DEFAULT_MAX_RESULTS: 8,
+        DEFAULT_TEMPERATURE: 0.7
+      }
+      ```
+      
+      ## Best Practices
+      - Use specific queries for better retrieval
+      - Monitor token usage for cost optimization
+    output: "✅ Valid guide documentation structure"
+
+  - description: "Incorrect Guide Placement"
+    input: |
+      # File: supabase/functions/RAG_QUERY_GUIDE.md
+      
+      # RAG Query Guide
+      This guide explains...
+    output: "❌ Guide documentation should be in guides/ folder"
+
+  - description: "Incorrect Naming"
+    input: |
+      # File: guides/rag-query-guide.md
+      
+      # RAG Query Guide
+      This guide explains...
+    output: "❌ Use UPPER_SNAKE_CASE naming: RAG_QUERY_GUIDE.md"
+
+  - description: "Missing Structure"
+    input: |
+      # File: guides/RAG_QUERY_GUIDE.md
+      
+      # RAG Query Guide
+      This guide explains how to use RAG queries.
+      
+      ## Usage
+      Call the function like this...
+    output: "⚠️ Guide should include: Overview, Key Features, Configuration, Best Practices"
+
+metadata:
+  priority: high
+  version: 1.0
+  category: documentation
+  tags:
+    - guides
+    - documentation
+    - structure
+    - organization
+</rule>
+
+## Guide Documentation Standards
+
+### File Organization
+
+1. **Location**: All guide documentation must be placed in the `guides/` folder
+2. **Naming**: Use UPPER_SNAKE_CASE with descriptive suffixes:
+   - `RAG_QUERY_GUIDE.md`
+   - `LOGGING_GUIDE.md`
+   - `OPTIMIZATION_GUIDE.md`
+   - `DEPLOYMENT_TUTORIAL.md`
+   - `API_DOCUMENTATION.md`
+
+### Required Structure
+
+Every guide should include these sections:
+
+```markdown
+# [Feature Name] Guide
+
+## Overview
+Brief description of what the guide covers and its purpose.
+
+## Key Features
+- Feature 1: Description
+- Feature 2: Description
+- Feature 3: Description
+
+## Usage Examples
+```typescript
+// Code examples with syntax highlighting
+const example = await functionCall();
+```
+
+## Configuration
+```typescript
+// Configuration options and settings
+const CONFIG = {
+  option1: 'value1',
+  option2: 'value2'
+}
+```
+
+## Best Practices
+- Practice 1: Explanation
+- Practice 2: Explanation
+- Practice 3: Explanation
+
+## Troubleshooting (if applicable)
+Common issues and solutions.
+
+## Related Documentation
+Links to related guides and resources.
+```
+
+### Content Guidelines
+
+1. **Clarity**: Write clear, concise explanations
+2. **Examples**: Include practical code examples
+3. **Step-by-step**: Provide detailed instructions
+4. **Visual aids**: Use emojis and formatting for organization
+5. **Links**: Reference related documentation and resources
+6. **Versioning**: Include version information if applicable
+
+### Formatting Standards
+
+1. **Headers**: Use proper markdown header hierarchy (# ## ###)
+2. **Code blocks**: Include language specification for syntax highlighting
+3. **Lists**: Use bullet points for better readability
+4. **Emojis**: Use emojis for visual organization and quick identification
+5. **Tables**: Use tables for structured information
+6. **Links**: Use descriptive link text
+
+### Examples of Good Guides
+
+- `guides/RAG_QUERY_GUIDE.md` - Comprehensive RAG system documentation
+- `guides/LOGGING_GUIDE.md` - Logging system implementation guide
+- `guides/OPTIMIZATION_GUIDE.md` - Performance optimization strategies
+
+### Migration Instructions
+
+If you find guide documentation in incorrect locations:
+
+1. **Move files**: Relocate to `guides/` folder
+2. **Rename files**: Use UPPER_SNAKE_CASE naming
+3. **Update structure**: Ensure all required sections are present
+4. **Update links**: Fix any internal references to moved files
+5. **Update imports**: Update any code that references the old locations
+
+### Benefits
+
+- ✅ **Consistent organization**: All guides in one location
+- ✅ **Easy discovery**: Clear naming conventions
+- ✅ **Maintainable structure**: Standardized format
+- ✅ **Better navigation**: Logical file organization
+- ✅ **Reduced confusion**: Clear separation of concerns
+description:
+globs:
+alwaysApply: false
+---

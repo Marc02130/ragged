@@ -81,3 +81,32 @@ If you don't want to use Docker Desktop, you can also run Docker on a Mac by man
 [How to Install Docker on Mac / MacOS](https://www.youtube.com/watch?v=-EXlfSsP49A)
 This video provides a step-by-step guide on how to install Docker Desktop on macOS.
 http://googleusercontent.com/youtube_content/3
+
+
+I get the following error:
+A new version of Supabase CLI is available: v2.39.2 (currently installed v2.19.7)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+
+Supabase is installed in:
+Mac ragged % which supabase
+/opt/homebrew/bin/supabase
+
+how do I update it?
+
+Based on the information you provided, your Supabase CLI was installed using **Homebrew**. Therefore, you should use the Homebrew command to update it.
+
+The error message shows that your current version is `v2.19.7`, while the latest version is `v2.39.2`. Updating is simple and is a good practice to ensure you have the latest features and bug fixes.
+
+To update the Supabase CLI, open your terminal and run the following command:
+
+```bash
+brew upgrade supabase/tap/supabase
+```
+
+### Explanation
+
+  * `brew`: This is the Homebrew command-line tool.
+  * `upgrade`: This command tells Homebrew to upgrade a specific package to its latest version.
+  * `supabase/tap/supabase`: This is the full name of the Supabase CLI package within Homebrew. Homebrew uses "taps" to manage repositories of packages that aren't in the main collection. `supabase/tap` is the repository, and `supabase` is the package.
+
+After the command completes, you can verify the update by running `supabase --version` again.

@@ -1,0 +1,276 @@
+Rule Name: documentation-placement.mdc
+Description: Enforces placement of documentation files in the documents folder and maintains consistent organization
+
+# Documentation Placement Standards
+
+This rule enforces proper placement and organization of documentation files in the project.
+
+<rule>
+name: documentation_placement
+description: Enforces documentation file placement in the documents folder and maintains consistent organization
+
+filters:
+  - type: file_extension
+    pattern: "\\.(md|mdx|txt|pdf|doc|docx)$"
+  - type: content
+    pattern: "(?i)documentation|specification|requirements|design|architecture|planning|analysis"
+  - type: event
+    pattern: "file_create|file_move"
+
+actions:
+  - type: enforce
+    conditions:
+      # Enforce documents folder placement for documentation files
+      - pattern: "^(?!documents/).*_DOCUMENTATION\\.md$"
+        message: "Documentation files must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_SPECIFICATION\\.md$"
+        message: "Specification files must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_REQUIREMENTS\\.md$"
+        message: "Requirements files must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_DESIGN\\.md$"
+        message: "Design documents must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_ARCHITECTURE\\.md$"
+        message: "Architecture documents must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_PLANNING\\.md$"
+        message: "Planning documents must be placed in the documents/ folder"
+      
+      - pattern: "^(?!documents/).*_ANALYSIS\\.md$"
+        message: "Analysis documents must be placed in the documents/ folder"
+      
+      # Enforce proper naming conventions
+      - pattern: "documents/.*\\.md$"
+        message: "Documentation files should use UPPER_SNAKE_CASE naming (e.g., PRD-RAGged.md, TDD-RAGged.md)"
+      
+      # Enforce documentation structure
+      - pattern: "documents/.*\\.md$"
+        message: "Documentation files should include: Title, Overview, Content, References"
+
+  - type: suggest
+    conditions:
+      - pattern: "documents/.*\\.md$"
+        message: |
+          Documentation Placement Checklist:
+          
+          1. File Location:
+             - ✅ Place in documents/ folder
+             - ✅ Use UPPER_SNAKE_CASE naming
+             - ✅ Include descriptive suffix (_DOCUMENTATION, _SPECIFICATION, etc.)
+          
+          2. Structure:
+             - ✅ Clear title and purpose
+             - ✅ Overview or summary section
+             - ✅ Detailed content sections
+             - ✅ References or links section
+             - ✅ Version information if applicable
+          
+          3. Content:
+             - ✅ Clear and comprehensive explanations
+             - ✅ Proper formatting and organization
+             - ✅ Links to related documents
+             - ✅ Date and author information
+             - ✅ Status or version tracking
+          
+          4. Organization:
+             - ✅ Group related documents together
+             - ✅ Use consistent naming patterns
+             - ✅ Maintain logical file hierarchy
+             - ✅ Update index or README if applicable
+
+examples:
+  - description: "Correct Documentation Placement"
+    input: |
+      # File: documents/PRD-RAGged.md
+      
+      # Product Requirements Document - RAGged
+      
+      ## Overview
+      This document outlines the requirements for the RAGged application...
+      
+      ## Functional Requirements
+      - User authentication and authorization
+      - Document upload and processing
+      - RAG query functionality
+      
+      ## Technical Requirements
+      - Supabase backend integration
+      - OpenAI API integration
+      - React frontend
+      
+      ## References
+      - Related documents: TDD-RAGged.md, USD-RAGged.md
+    output: "✅ Valid documentation structure and placement"
+
+  - description: "Incorrect Documentation Placement"
+    input: |
+      # File: src/PRD-RAGged.md
+      
+      # Product Requirements Document
+      This document outlines the requirements...
+    output: "❌ Documentation should be in documents/ folder"
+
+  - description: "Incorrect Naming"
+    input: |
+      # File: documents/prd-ragged.md
+      
+      # Product Requirements Document
+      This document outlines the requirements...
+    output: "❌ Use UPPER_SNAKE_CASE naming: PRD-RAGged.md"
+
+  - description: "Missing Structure"
+    input: |
+      # File: documents/PRD-RAGged.md
+      
+      # Product Requirements Document
+      This document outlines the requirements for the RAGged application.
+      
+      The application should have user authentication.
+    output: "⚠️ Documentation should include: Overview, Content sections, References"
+
+metadata:
+  priority: high
+  version: 1.0
+  category: documentation
+  tags:
+    - documentation
+    - organization
+    - structure
+    - placement
+</rule>
+
+## Documentation Placement Standards
+
+### File Organization
+
+1. **Location**: All documentation files must be placed in the `documents/` folder
+2. **Naming**: Use UPPER_SNAKE_CASE with descriptive suffixes:
+   - `PRD-RAGged.md` (Product Requirements Document)
+   - `TDD-RAGged.md` (Technical Design Document)
+   - `USD-RAGged.md` (User Story Document)
+   - `ARCHITECTURE_DOCUMENTATION.md`
+   - `API_SPECIFICATION.md`
+   - `DEPLOYMENT_PLANNING.md`
+
+### Documentation Categories
+
+#### 1. **Requirements Documents**
+- Product Requirements Documents (PRD)
+- Technical Requirements Documents (TRD)
+- User Requirements Documents (URD)
+- Functional Requirements Documents (FRD)
+
+#### 2. **Design Documents**
+- Technical Design Documents (TDD)
+- Architecture Documents
+- System Design Documents
+- Database Design Documents
+
+#### 3. **Planning Documents**
+- Project Planning Documents
+- Deployment Planning Documents
+- Migration Planning Documents
+- Testing Planning Documents
+
+#### 4. **Analysis Documents**
+- Market Analysis Documents
+- Technical Analysis Documents
+- Performance Analysis Documents
+- Security Analysis Documents
+
+### Required Structure
+
+Every documentation file should include:
+
+```markdown
+# [Document Title]
+
+## Overview
+Brief description of the document's purpose and scope.
+
+## [Main Content Section]
+Detailed content organized in logical sections.
+
+## [Additional Sections]
+- Section 1: Description
+- Section 2: Description
+- Section 3: Description
+
+## References
+- Related documents
+- External resources
+- Links to relevant materials
+
+## Version Information
+- Version: 1.0
+- Date: YYYY-MM-DD
+- Author: [Author Name]
+- Status: [Draft/Review/Approved]
+```
+
+### Content Guidelines
+
+1. **Clarity**: Write clear, comprehensive explanations
+2. **Organization**: Use logical structure and flow
+3. **Completeness**: Include all necessary information
+4. **References**: Link to related documents and resources
+5. **Versioning**: Track document versions and changes
+6. **Ownership**: Identify document owners and stakeholders
+
+### Formatting Standards
+
+1. **Headers**: Use proper markdown header hierarchy (# ## ###)
+2. **Lists**: Use bullet points and numbered lists appropriately
+3. **Code blocks**: Include language specification for syntax highlighting
+4. **Tables**: Use tables for structured information
+5. **Links**: Use descriptive link text
+6. **Emojis**: Use emojis sparingly for visual organization
+
+### Examples of Good Documentation
+
+- `documents/PRD-RAGged.md` - Product requirements for the RAG application
+- `documents/TDD-RAGged.md` - Technical design and architecture
+- `documents/USD-RAGged.md` - User stories and acceptance criteria
+- `documents/RULE_REVIEW_SUMMARY.md` - Documentation review summary
+
+### Migration Instructions
+
+If you find documentation in incorrect locations:
+
+1. **Move files**: Relocate to `documents/` folder
+2. **Rename files**: Use UPPER_SNAKE_CASE naming
+3. **Update structure**: Ensure all required sections are present
+4. **Update links**: Fix any internal references to moved files
+5. **Update imports**: Update any code that references the old locations
+
+### Documentation Index
+
+Consider creating a `documents/README.md` or `documents/INDEX.md` to:
+- List all documentation files
+- Provide brief descriptions
+- Show relationships between documents
+- Guide users to the right documentation
+
+### Benefits
+
+- ✅ **Centralized organization**: All documentation in one location
+- ✅ **Easy discovery**: Clear naming conventions
+- ✅ **Consistent structure**: Standardized format across all documents
+- ✅ **Better navigation**: Logical file organization
+- ✅ **Reduced confusion**: Clear separation from code and guides
+- ✅ **Improved maintainability**: Easier to update and manage
+
+### Exceptions
+
+Some documentation files may be appropriately placed outside the `documents/` folder:
+- `README.md` in project root (project overview)
+- `README.md` in specific directories (directory-specific documentation)
+- `CHANGELOG.md` in project root (version history)
+- `LICENSE` files in project root (legal documentation)
+description:
+globs:
+alwaysApply: false
+---

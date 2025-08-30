@@ -32,6 +32,15 @@ export interface RAGQueryRequest {
   maxResults?: number
   includeChatHistory?: boolean
   temperature?: number
+  model?: string
+  includeThreadContext?: boolean
+  searchStrategy?: 'hybrid' | 'semantic' | 'keyword'
+  responseFormat?: 'text' | 'structured'
+  // Retrieval filtering options
+  topKPerThread?: number
+  maxThreadsSearch?: number
+  crossThreadSearch?: boolean
+  currentThreadPriority?: boolean
 }
 
 export interface RAGQueryResponse {
@@ -41,7 +50,22 @@ export interface RAGQueryResponse {
     content: string
     metadata: Record<string, any>
     similarity: number
+    sourceType: 'document' | 'chat_history' | 'thread_archive'
   }>
+  conversationId?: string
+  threadContext?: {
+    threadId: string
+    threadTitle: string
+    conversationCount: number
+    lastActivity: string
+  }
+  performance?: {
+    searchTime: number
+    generationTime: number
+    totalTime: number
+    tokensUsed: number
+  }
+  fallbackGenerated?: boolean
   error?: string
 }
 
@@ -132,7 +156,7 @@ export async function vectorizeChatHistory(
 }
 
 /**
- * Perform RAG query
+ * Perform RAG query with enhanced options and retrieval filtering
  */
 export async function performRAGQuery(
   threadId: string,
@@ -142,15 +166,33 @@ export async function performRAGQuery(
     maxResults?: number
     includeChatHistory?: boolean
     temperature?: number
+    model?: string
+    includeThreadContext?: boolean
+    searchStrategy?: 'hybrid' | 'semantic' | 'keyword'
+    responseFormat?: 'text' | 'structured'
+    // Retrieval filtering options
+    topKPerThread?: number
+    maxThreadsSearch?: number
+    crossThreadSearch?: boolean
+    currentThreadPriority?: boolean
   }
 ): Promise<RAGQueryResponse> {
   return callEdgeFunction<RAGQueryResponse>('rag-query', {
     threadId,
     userId,
     query,
-    maxResults: options?.maxResults || 5,
+    maxResults: options?.maxResults || 8,
     includeChatHistory: options?.includeChatHistory ?? true,
-    temperature: options?.temperature || 0.7
+    temperature: options?.temperature || 0.7,
+    model: options?.model || 'gpt-4',
+    includeThreadContext: options?.includeThreadContext ?? false,
+    searchStrategy: options?.searchStrategy || 'semantic',
+    responseFormat: options?.responseFormat || 'text',
+    // Retrieval filtering options
+    topKPerThread: options?.topKPerThread || 3,
+    maxThreadsSearch: options?.maxThreadsSearch || 5,
+    crossThreadSearch: options?.crossThreadSearch ?? true,
+    currentThreadPriority: options?.currentThreadPriority ?? true
   })
 }
 
