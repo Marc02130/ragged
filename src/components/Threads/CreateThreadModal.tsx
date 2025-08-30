@@ -29,8 +29,16 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
       
       if (error) {
         setError(error);
+        // Show error toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('error', `Failed to create thread: ${error}`);
+        }
       } else {
         onThreadCreated(data);
+        // Show success toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('success', 'Thread created successfully');
+        }
         handleClose();
       }
     } catch (err) {

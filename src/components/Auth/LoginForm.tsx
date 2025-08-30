@@ -22,8 +22,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToSignU
       
       if (error) {
         setError(error.message);
+        // Show error toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('error', `Login failed: ${error.message}`);
+        }
       } else {
         onSuccess();
+        // Show success toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('success', 'Login successful');
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');

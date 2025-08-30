@@ -39,8 +39,16 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToLog
       
       if (error) {
         setError(error.message);
+        // Show error toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('error', `Sign up failed: ${error.message}`);
+        }
       } else {
         setMessage('Check your email for a confirmation link!');
+        // Show success toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('success', 'Account created! Check your email for confirmation.');
+        }
         // Don't call onSuccess immediately - user needs to confirm email
       }
     } catch (err) {

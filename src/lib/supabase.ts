@@ -75,20 +75,60 @@ export const threads = {
     return { data, error: error?.message };
   },
 
-  list: async (): Promise<ApiResponse<Thread[]>> => {
+  list: async (includeArchived: boolean = false): Promise<ApiResponse<Thread[]>> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return { data: [], error: 'Unauthorized' };
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('threads')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('last_activity_at', { ascending: false });
+      .eq('user_id', user.id);
+
+    if (!includeArchived) {
+      query = query.eq('status', 'active');
+    }
+
+    const { data, error } = await query.order('last_activity_at', { ascending: false });
 
     return { data: data || [], error: error?.message };
+  },
+
+  archive: async (threadId: string): Promise<ApiResponse<boolean>> => {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { data: false, error: 'Unauthorized' };
+    }
+
+    const { error } = await supabase
+      .from('threads')
+      .update({
+        status: 'archived',
+        last_activity_at: new Date().toISOString()
+      })
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id);
+
+    return { data: !error, error: error?.message };
+  },
+
+  restore: async (threadId: string): Promise<ApiResponse<boolean>> => {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { data: false, error: 'Unauthorized' };
+    }
+
+    const { error } = await supabase
+      .from('threads')
+      .update({
+        status: 'active',
+        last_activity_at: new Date().toISOString()
+      })
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id);
+
+    return { data: !error, error: error?.message };
   },
 
   delete: async (threadId: string): Promise<ApiResponse<boolean>> => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chat } from '../../lib/supabase';
 import type { ChatMessage, Conversation } from '../../types';
+import { LoadingSpinner } from '../UI/LoadingSpinner';
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -87,6 +88,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, errorMsg]);
+        
+        // Show error toast
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+          (window as any).showToast('error', `Query failed: ${error}`);
+        }
       } else {
         // Add assistant response with sources
         const assistantMsg: ChatMessage = {
@@ -112,6 +118,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMsg]);
+      
+      // Show error toast
+      if (typeof window !== 'undefined' && (window as any).showToast) {
+        (window as any).showToast('error', `Query failed: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -192,12 +203,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {loading && (
           <div className="flex justify-start">
             <div className="bg-white border border-gray-200 text-gray-900 px-4 py-2 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <span className="text-sm text-gray-500">Thinking...</span>
-              </div>
+              <LoadingSpinner size="sm" text="Vectorizing and generating response..." />
             </div>
           </div>
         )}
@@ -226,9 +232,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <button
             type="submit"
             disabled={!inputMessage.trim() || loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
-            {loading ? 'Sending...' : 'Send'}
+            {loading ? (
+              <>
+                <LoadingSpinner size="sm" variant="white" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                <span>Send</span>
+              </>
+            )}
           </button>
         </form>
       </div>
