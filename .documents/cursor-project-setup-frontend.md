@@ -9244,8 +9244,8 @@ Looking at the error message and your files, I can now see the exact problem:
 The error is coming from a **different CSS file** that has an incorrect import statement:
 
 ```
-Unable to resolve `@import "@tailwindcss"` from /Users/marcbreneiser/Code/ragged/src
-File: /Users/marcbreneiser/Code/ragged/src/App.css?direct:undefined:NaN
+Unable to resolve `@import "@tailwindcss"` from /Users/user/Code/ragged/src
+File: /Users/user/Code/ragged/src/App.css?direct:undefined:NaN
 ```
 
 ### **🔧 What's Happening**
@@ -9281,8 +9281,8 @@ The `src/App.css` file needs to be either:
 The error is specifically pointing to `App.css` as the source of the problematic import statement, not your `index.css` file which is correctly configured.
 
 ```plaintext
-Unable to resolve `@import "@tailwindcss"` from /Users/marcbreneiser/Code/ragged/src
-File: /Users/marcbreneiser/Code/ragged/src/App.css?direct:undefined:NaN
+Unable to resolve `@import "@tailwindcss"` from /Users/user/Code/ragged/src
+File: /Users/user/Code/ragged/src/App.css?direct:undefined:NaN
 ```
 
 ```css
