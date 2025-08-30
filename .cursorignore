@@ -59,6 +59,7 @@ temp/
 *.docx
 *.doc
 *.txt
+*.rtf
 uploads/
 storage/
 

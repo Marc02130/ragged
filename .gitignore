@@ -81,6 +81,13 @@ public/storage/
 *.pkl
 *.pickle
 
+# Document files (user uploads)
+*.pdf
+*.docx
+*.doc
+*.txt
+*.rtf
+
 # Cache directories
 .cache/
 .parcel-cache/
