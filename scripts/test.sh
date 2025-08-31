@@ -1,7 +1,7 @@
 # Install dependencies
 npm install
 
-# Run all tests
+# Run all tests - does not work with e2e tests
 npm test
 
 # Run specific test categories

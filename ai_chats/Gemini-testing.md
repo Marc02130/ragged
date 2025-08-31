@@ -817,9 +817,9 @@ RERUN  tests/e2e/thread-deletion.test.ts x3 
 
  FAIL   E2E Tests  tests/e2e/thread-deletion.test.ts [ tests/e2e/thread-deletion.test.ts ]
 Error: Transform failed with 1 error:
-/Users/marcbreneiser/Code/ragged/tests/e2e/thread-deletion.test.ts:446:14: ERROR: Expected ")" but found "you"
+/Users/user/Code/ragged/tests/e2e/thread-deletion.test.ts:446:14: ERROR: Expected ")" but found "you"
   Plugin: vite:esbuild
-  File: /Users/marcbreneiser/Code/ragged/tests/e2e/thread-deletion.test.ts:446:14
+  File: /Users/user/Code/ragged/tests/e2e/thread-deletion.test.ts:446:14
   
   Expected ")" but found "you"
   444 |    return (
@@ -877,9 +877,9 @@ RERUN  tests/e2e/thread-deletion.test.ts x4 
 
  FAIL   E2E Tests  tests/e2e/thread-deletion.test.ts [ tests/e2e/thread-deletion.test.ts ]
 Error: Transform failed with 1 error:
-/Users/marcbreneiser/Code/ragged/tests/e2e/thread-deletion.test.ts:446:22: ERROR: Expected ")" but found "you"
+/Users/user/Code/ragged/tests/e2e/thread-deletion.test.ts:446:22: ERROR: Expected ")" but found "you"
   Plugin: vite:esbuild
-  File: /Users/marcbreneiser/Code/ragged/tests/e2e/thread-deletion.test.ts:446:22
+  File: /Users/user/Code/ragged/tests/e2e/thread-deletion.test.ts:446:22
   
   Expected ")" but found "you"
   444 |    return (
