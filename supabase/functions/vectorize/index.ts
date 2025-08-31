@@ -1,7 +1,7 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
-import { OpenAIEmbeddings } from "langchain/embeddings/openai"
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
+import { OpenAIEmbeddings } from "@langchain/openai"
 import { Document } from "langchain/document"
 
 // Types for the vectorization process

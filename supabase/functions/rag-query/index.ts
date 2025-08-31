@@ -1,7 +1,7 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
 import { OpenAI } from "langchain/llms/openai"
-import { OpenAIEmbeddings } from "langchain/embeddings/openai"
+import { OpenAIEmbeddings } from "@langchain/openai"
 
 // Types for RAG queries
 interface RAGQueryRequest {

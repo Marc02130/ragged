@@ -1,7 +1,7 @@
 ---
 description: Guidelines for effective self and peer code reviews to maintain code quality
 globs: **/*
-alwaysApply: false
+alwaysApply: true
 ---
 
 
@@ -45,7 +45,6 @@ actions:
          - Review your own code first
          - Run linters and tests
          - Check for code smells and anti-patterns
-         - Limit changes to 3 files or fewer per review
       
       2. Review Criteria:
          - Functionality: Does it work as intended?

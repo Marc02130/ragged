@@ -1,6 +1,6 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
-import { OpenAIEmbeddings } from "langchain/embeddings/openai"
+import { OpenAIEmbeddings } from "@langchain/openai"
 
 // Types for thread deletion
 interface DeleteThreadRequest {

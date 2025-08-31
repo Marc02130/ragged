@@ -2012,7 +2012,7 @@ examples:
       import { serve } from "std/http/server"
       import { createClient } from '@supabase/supabase-js'
       import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
-      import { OpenAIEmbeddings } from "langchain/embeddings/openai"
+      import { OpenAIEmbeddings } from "@langchain/openai"
     output: "Clean imports using deno.json import map"
 
   - description: "Before and after comparison"
