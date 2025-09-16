@@ -1,6 +1,6 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
-import { OpenAIEmbeddings } from "@langchain/openai"
+import OpenAI from "openai"
 
 // Types for thread deletion
 interface DeleteThreadRequest {
@@ -46,9 +46,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Initialize OpenAI embeddings
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: openaiApiKey,
-  modelName: 'text-embedding-ada-002'
+const openai = new OpenAI({
+  apiKey: openaiApiKey,
 })
 
 /**
@@ -147,7 +146,11 @@ async function archiveThread(threadId: string, userId: string): Promise<{ succes
     const archiveContent = createThreadArchive(thread, conversations)
     
     // Generate embedding for the archive
-    const [archiveEmbedding] = await embeddings.embedDocuments([archiveContent])
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: archiveContent,
+    })
+    const archiveEmbedding = embeddingResponse.data[0].embedding
 
     // Store archive in vector_chunks table
     const { error: insertError } = await supabase
@@ -254,13 +257,14 @@ async function deleteThread(threadId: string, userId: string): Promise<{ success
  * Main Edge Function handler
  */
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Max-Age': '86400',
       }
     })
   }
@@ -276,7 +280,13 @@ serve(async (req) => {
       console.error(`[DELETE THREAD] ❌ Authentication failed:`, authError)
       return new Response(
         JSON.stringify({ error: authError || 'Authentication failed' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -288,7 +298,13 @@ serve(async (req) => {
     if (!requestData.threadId || !requestData.userId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: threadId and userId' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -296,7 +312,13 @@ serve(async (req) => {
     if (requestData.userId !== user.id) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized access to thread' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -311,7 +333,13 @@ serve(async (req) => {
     if (threadError || !thread) {
       return new Response(
         JSON.stringify({ error: 'Thread not found or access denied' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 404, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -323,7 +351,13 @@ serve(async (req) => {
           message: 'Deletion not confirmed. Set confirmDeletion to true to proceed.',
           threadTitle: thread.title
         }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -337,7 +371,13 @@ serve(async (req) => {
           message: 'Failed to archive thread before deletion',
           error: archiveResult.error
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -351,7 +391,13 @@ serve(async (req) => {
           message: 'Failed to delete thread',
           error: deleteResult.error
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 

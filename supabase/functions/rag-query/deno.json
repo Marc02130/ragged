@@ -1,8 +1,7 @@
 {
   "imports": {
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
-    "langchain/llms/openai": "https://esm.sh/langchain@0.1.0/llms/openai",
-    "langchain/embeddings/openai": "https://esm.sh/langchain@0.1.0/embeddings/openai",
+    "openai": "https://esm.sh/openai@5.20.2",
     "std/http/server": "https://deno.land/std@0.208.0/http/server.ts"
   },
   "compilerOptions": {

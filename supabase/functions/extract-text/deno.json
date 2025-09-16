@@ -1,8 +1,6 @@
 {
   "imports": {
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
-    "openai": "https://esm.sh/openai@4.89.0",
-    "@langchain/text-splitter": "npm:@langchain/textsplitters@0.1.0",
     "std/http/server": "https://deno.land/std@0.208.0/http/server.ts"
   },
   "compilerOptions": {
@@ -40,4 +38,4 @@
     "lint": "deno lint",
     "fmt": "deno fmt"
   }
-} 
+}

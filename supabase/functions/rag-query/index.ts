@@ -1,7 +1,6 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
-import { OpenAI } from "langchain/llms/openai"
-import { OpenAIEmbeddings } from "@langchain/openai"
+import OpenAI from "openai"
 
 // Types for RAG queries
 interface RAGQueryRequest {
@@ -77,7 +76,7 @@ const RAG_CONFIG = {
   DEFAULT_TEMPERATURE: 0.7,
   DEFAULT_MODEL: 'gpt-4',
   MAX_TOKENS: 2000,
-  SIMILARITY_THRESHOLD: 0.7,
+  SIMILARITY_THRESHOLD: 0.1,
   CONTEXT_WINDOW_SIZE: 4000,
   CHAT_HISTORY_WEIGHT: 0.8,
   DOCUMENT_WEIGHT: 1.0,
@@ -87,7 +86,7 @@ const RAG_CONFIG = {
   MAX_THREADS_SEARCH: 5, // Maximum number of threads to search
   CROSS_THREAD_WEIGHT: 0.9, // Weight for cross-thread results
   CURRENT_THREAD_WEIGHT: 1.0, // Weight for current thread results
-  MIN_SIMILARITY_CROSS_THREAD: 0.8, // Higher threshold for cross-thread results
+  MIN_SIMILARITY_CROSS_THREAD: 0.2, // Higher threshold for cross-thread results
   // Fallback configuration
   AUTO_VECTORIZE_FALLBACK: true, // Auto-vectorize fallback conversations
   FALLBACK_TEMPERATURE: 0.8, // Higher temperature for fallback responses
@@ -101,16 +100,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Initialize OpenAI components
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: openaiApiKey,
-  modelName: 'text-embedding-ada-002'
-})
-
-const llm = new OpenAI({
-  openAIApiKey: openaiApiKey,
-  modelName: 'gpt-4',
-  temperature: 0.7,
-  maxTokens: 1000
+const openai = new OpenAI({
+  apiKey: openaiApiKey,
 })
 
 /**
@@ -176,7 +167,7 @@ async function performRAGQuery(request: RAGQueryRequest): Promise<RAGQueryRespon
   
   try {
     // Get thread context if requested
-    let threadContext = null
+    let threadContext: any = null
     if (request.includeThreadContext) {
       console.log(`[RAG QUERY] Fetching thread context...`)
       threadContext = await getThreadContext(request.threadId, request.userId)
@@ -185,7 +176,11 @@ async function performRAGQuery(request: RAGQueryRequest): Promise<RAGQueryRespon
     // Generate embedding for the query
     console.log(`[RAG QUERY] Generating query embedding...`)
     const queryStartTime = Date.now()
-    const queryEmbedding = await embeddings.embedQuery(request.query)
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: request.query,
+    })
+    const queryEmbedding = embeddingResponse.data[0].embedding
     const queryEndTime = Date.now()
     console.log(`[RAG QUERY] Query embedding generated in ${queryEndTime - queryStartTime}ms`)
 
@@ -432,22 +427,15 @@ async function performSimilaritySearch(request: RAGQueryRequest, queryEmbedding:
     for (const thread of threadsToSearch) {
       console.log(`[RAG QUERY] Searching thread: ${thread.title} (${thread.id})`)
       
-      // Build similarity search query for this thread
-      let threadQuery = supabase
-        .from('vector_chunks')
-        .select('content, metadata, embedding, thread_id')
-        .eq('user_id', request.userId)
-        .eq('thread_id', thread.id)
-        .order(`embedding <-> '[${queryEmbedding.join(',')}]'::vector`, { ascending: true })
-        .limit(RAG_CONFIG.TOP_K_PER_THREAD * 2) // Get more for filtering
-
-      // Apply chat history filtering if requested
-      if (!request.includeChatHistory) {
-        threadQuery = threadQuery.neq('metadata->is_chat_history', true)
-      }
-
-      // Execute search for this thread
-      const { data: threadChunks, error: threadSearchError } = await threadQuery
+      // Use RPC function for vector similarity search to avoid URL length limits
+      const { data: threadChunks, error: threadSearchError } = await supabase
+        .rpc('search_similar_chunks', {
+          query_embedding: queryEmbedding,
+          p_user_id: request.userId,
+          p_thread_id: thread.id,
+          match_count: RAG_CONFIG.TOP_K_PER_THREAD * 2,
+          include_chat_history: request.includeChatHistory !== false
+        })
 
       if (threadSearchError) {
         console.error(`[RAG QUERY] Error searching thread ${thread.id}:`, threadSearchError)
@@ -459,10 +447,10 @@ async function performSimilaritySearch(request: RAGQueryRequest, queryEmbedding:
         continue
       }
 
-      // Calculate similarity scores for this thread's chunks
+      // Use similarity scores from RPC function (already calculated)
       const scoredChunks = threadChunks.map(chunk => ({
         ...chunk,
-        similarity: calculateCosineSimilarity(queryEmbedding, chunk.embedding),
+        similarity: chunk.similarity, // Use the similarity score from RPC function
         threadId: thread.id,
         threadTitle: thread.title
       }))
@@ -472,6 +460,14 @@ async function performSimilaritySearch(request: RAGQueryRequest, queryEmbedding:
         ? RAG_CONFIG.SIMILARITY_THRESHOLD 
         : RAG_CONFIG.MIN_SIMILARITY_CROSS_THREAD
 
+      // Debug: Log similarity scores before filtering
+      console.log(`[RAG QUERY] Similarity scores for thread ${thread.title}:`, 
+        scoredChunks.map(chunk => ({ 
+          content: chunk.content.substring(0, 50) + '...', 
+          similarity: chunk.similarity 
+        }))
+      )
+      
       const filteredChunks = scoredChunks.filter(chunk => chunk.similarity >= threshold)
 
       // Apply source type weighting
@@ -507,7 +503,7 @@ async function performSimilaritySearch(request: RAGQueryRequest, queryEmbedding:
     const crossThreadWeightedChunks = allChunks.map(chunk => {
       const isCurrentThread = chunk.threadId === request.threadId
       
-      let threadWeight = RAG_CONFIG.CROSS_THREAD_WEIGHT
+      let threadWeight: number = RAG_CONFIG.CROSS_THREAD_WEIGHT
       if (isCurrentThread && currentThreadPriority) {
         threadWeight = RAG_CONFIG.CURRENT_THREAD_WEIGHT
       } else if (isCurrentThread && !currentThreadPriority) {
@@ -671,24 +667,21 @@ Answer:`
 async function generateFallbackResponse(query: string, threadContext: any) {
   const fallbackPrompt = createFallbackPrompt(query, threadContext)
   
-  // Create LLM instance with fallback settings
-  const llm = new OpenAI({
-    openAIApiKey: openaiApiKey,
-    modelName: RAG_CONFIG.DEFAULT_MODEL,
-    temperature: RAG_CONFIG.FALLBACK_TEMPERATURE,
-    maxTokens: RAG_CONFIG.FALLBACK_MAX_TOKENS
-  })
-
   try {
     const startTime = Date.now()
-    const response = await llm.call(fallbackPrompt)
+    const response = await openai.chat.completions.create({
+      model: RAG_CONFIG.DEFAULT_MODEL,
+      messages: [{ role: 'user', content: fallbackPrompt }],
+      temperature: RAG_CONFIG.FALLBACK_TEMPERATURE,
+      max_tokens: RAG_CONFIG.FALLBACK_MAX_TOKENS
+    })
     const endTime = Date.now()
     
-    // Estimate token usage
-    const tokensUsed = Math.ceil((fallbackPrompt.length + response.length) / 4)
+    const responseText = response.choices[0]?.message?.content || ''
+    const tokensUsed = response.usage?.total_tokens || Math.ceil((fallbackPrompt.length + responseText.length) / 4)
     
     return {
-      response: response.trim(),
+      response: responseText.trim(),
       tokensUsed,
       generationTime: endTime - startTime
     }
@@ -745,7 +738,11 @@ async function vectorizeFallbackConversation(
     const conversationText = `User: ${userQuery}\n\nAssistant: ${assistantResponse}`
     
     // Generate embedding for the conversation
-    const embedding = await embeddings.embedQuery(conversationText)
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: conversationText,
+    })
+    const embedding = embeddingResponse.data[0].embedding
     
     // Prepare vector chunk for insertion
     const vectorChunk = {
@@ -791,22 +788,19 @@ async function generateResponse(prompt: string, request: RAGQueryRequest) {
   const model = request.model || RAG_CONFIG.DEFAULT_MODEL
   const temperature = request.temperature || RAG_CONFIG.DEFAULT_TEMPERATURE
 
-  // Create LLM instance with specific model
-  const llm = new OpenAI({
-    openAIApiKey: openaiApiKey,
-    modelName: model,
-    temperature,
-    maxTokens: RAG_CONFIG.MAX_TOKENS
-  })
-
   try {
-    const response = await llm.call(prompt)
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature,
+      max_tokens: RAG_CONFIG.MAX_TOKENS
+    })
     
-    // Estimate token usage (rough approximation)
-    const tokensUsed = Math.ceil((prompt.length + response.length) / 4)
+    const responseText = response.choices[0]?.message?.content || ''
+    const tokensUsed = response.usage?.total_tokens || Math.ceil((prompt.length + responseText.length) / 4)
     
     return {
-      response: response.trim(),
+      response: responseText.trim(),
       tokensUsed
     }
   } catch (error) {
@@ -930,7 +924,7 @@ serve(async (req) => {
   const requestStartTime = Date.now()
   console.log(`[RAG EDGE FUNCTION] 🚀 RAG query request received: ${req.method} ${req.url}`)
   
-  // Handle CORS
+  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     console.log(`[RAG EDGE FUNCTION] Handling CORS preflight request`)
     return new Response('ok', {
@@ -938,6 +932,7 @@ serve(async (req) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Max-Age': '86400',
       }
     })
   }
@@ -953,7 +948,13 @@ serve(async (req) => {
       console.error(`[RAG EDGE FUNCTION] ❌ Authentication failed:`, authError)
       return new Response(
         JSON.stringify({ error: authError || 'Authentication failed' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -971,7 +972,13 @@ serve(async (req) => {
       })
       return new Response(
         JSON.stringify({ error: 'Missing required fields: threadId, userId, and query' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -980,7 +987,13 @@ serve(async (req) => {
       console.error(`[RAG EDGE FUNCTION] ❌ Unauthorized access: requested user ${requestData.userId} != authenticated user ${user.id}`)
       return new Response(
         JSON.stringify({ error: 'Unauthorized access to thread' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -1006,7 +1019,13 @@ serve(async (req) => {
       console.error(`[RAG EDGE FUNCTION] ❌ Thread not found or access denied:`, threadError?.message)
       return new Response(
         JSON.stringify({ error: 'Thread not found or access denied' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 404, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
