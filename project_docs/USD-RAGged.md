@@ -42,7 +42,7 @@ This document outlines key user stories based on the PRD, formatted as: **As a [
 - List uploaded docs in thread UI.
 
 **Technical Notes:**
-- Store in scoped bucket; trigger vectorization Edge Function.
+- Store in scoped bucket; trigger `extract-text` and `vectorize` Edge Functions.
 
 ### US-004: Perform RAG Query
 **As a** user,  
@@ -55,7 +55,7 @@ This document outlines key user stories based on the PRD, formatted as: **As a [
 - Maintain conversation continuity.
 
 **Technical Notes:**
-- Embed query; search `vector_chunks`; augment with history from `conversations`; OpenAI generate.
+- Embed query using OpenAI; PostgreSQL RPC function `search_similar_chunks` for vector similarity search; augment with history from `conversations`; OpenAI GPT-4 generate.
 
 ### US-005: Vectorize Chat History
 **As a** user,  
@@ -67,7 +67,7 @@ This document outlines key user stories based on the PRD, formatted as: **As a [
 - Improves response relevance over time.
 
 **Technical Notes:**
-- Edge Function chunks and embeds messages; store in `vector_chunks`.
+- Edge Function uses direct OpenAI client to chunk and embed messages; store in `vector_chunks`.
 
 ### US-006: Delete Thread with Archival
 **As a** user,  

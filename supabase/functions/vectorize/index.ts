@@ -1,8 +1,7 @@
 import { serve } from "std/http/server"
 import { createClient } from '@supabase/supabase-js'
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
-import { OpenAIEmbeddings } from "@langchain/openai"
-import { Document } from "langchain/document"
+import OpenAI from 'openai'
+import { RecursiveCharacterTextSplitter } from '@langchain/text-splitter'
 
 // Types for the vectorization process
 interface VectorizationRequest {
@@ -20,34 +19,6 @@ interface VectorizationRequest {
   }
 }
 
-// User preferences interface
-interface UserPreferences {
-  rag?: {
-    default_model?: string
-    temperature?: number
-    max_tokens?: number
-    include_chat_history?: boolean
-    cross_thread_search?: boolean
-    similarity_threshold?: number
-  }
-  processing?: {
-    chunk_size?: number
-    chunk_overlap?: number
-    max_chunks_per_document?: number
-  }
-  ui?: {
-    theme?: string
-    compact_mode?: boolean
-    show_sources?: boolean
-    auto_scroll?: boolean
-  }
-  notifications?: {
-    email_notifications?: boolean
-    processing_complete?: boolean
-    error_alerts?: boolean
-  }
-}
-
 interface VectorizationResponse {
   success: boolean
   message: string
@@ -57,33 +28,29 @@ interface VectorizationResponse {
   error?: string
 }
 
-// Configuration constants for large document optimization
+// Configuration constants
 const VECTORIZATION_CONFIG = {
-  MAX_CHUNKS_PER_DOCUMENT: 1000, // Limit chunks per document
-  BATCH_SIZE: 100, // Insert chunks in batches of 100
+  MAX_CHUNKS_PER_DOCUMENT: 1000,
+  BATCH_SIZE: 100,
   DEFAULT_CHUNK_SIZE: 1000,
   DEFAULT_CHUNK_OVERLAP: 200,
-  MAX_EMBEDDING_BATCH_SIZE: 50, // OpenAI API limit for embeddings
-  MAX_CONTENT_LENGTH: 1000000, // 1MB content limit
-  RATE_LIMIT_DELAY: 1000, // 1 second delay between batches
+  MAX_EMBEDDING_BATCH_SIZE: 50,
+  MAX_CONTENT_LENGTH: 1000000,
+  RATE_LIMIT_DELAY: 1000,
 } as const
 
-// Initialize Supabase client
+// Initialize clients
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-// Initialize OpenAI embeddings
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: openaiApiKey,
-  modelName: 'text-embedding-ada-002'
-})
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const openai = new OpenAI({ apiKey: openaiApiKey })
 
 /**
  * Enhanced authentication and user preferences validation
  */
-async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user: any; preferences: UserPreferences; error?: string }> {
+async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user: any; preferences: any; error?: string }> {
   try {
     console.log(`[AUTH] Validating authentication...`)
     
@@ -131,13 +98,56 @@ async function validateAuthAndGetPreferences(authHeader: string): Promise<{ user
 }
 
 /**
- * Process and vectorize uploaded documents with optimization for large documents
+ * Generate embeddings for text chunks using OpenAI
+ */
+async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  console.log(`[EMBEDDINGS] Generating embeddings for ${texts.length} texts`)
+  
+  const embeddings: number[][] = []
+  const batchSize = VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE
+  
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batch = texts.slice(i, i + batchSize)
+    const batchNumber = Math.floor(i / batchSize) + 1
+    const totalBatches = Math.ceil(texts.length / batchSize)
+    
+    console.log(`[EMBEDDINGS] Processing batch ${batchNumber}/${totalBatches} (${batch.length} texts)`)
+    
+    try {
+      const response = await openai.embeddings.create({
+        model: 'text-embedding-ada-002',
+        input: batch,
+        encoding_format: 'float'
+      })
+      
+      const batchEmbeddings = response.data.map(item => item.embedding)
+      embeddings.push(...batchEmbeddings)
+      
+      console.log(`[EMBEDDINGS] Batch ${batchNumber} completed`)
+      
+      // Rate limiting delay between batches
+      if (i + batchSize < texts.length) {
+        console.log(`[EMBEDDINGS] Waiting ${VECTORIZATION_CONFIG.RATE_LIMIT_DELAY}ms before next batch...`)
+        await new Promise(resolve => setTimeout(resolve, VECTORIZATION_CONFIG.RATE_LIMIT_DELAY))
+      }
+    } catch (error) {
+      console.error(`[EMBEDDINGS] Batch ${batchNumber} error:`, error)
+      throw new Error(`Failed to generate embeddings for batch ${batchNumber}`)
+    }
+  }
+  
+  console.log(`[EMBEDDINGS] ✅ All embeddings generated successfully (${embeddings.length} total)`)
+  return embeddings
+}
+
+/**
+ * Process and vectorize uploaded documents
  */
 async function vectorizeDocument(
   documentId: string, 
   userId: string, 
   options?: VectorizationRequest['options'],
-  preferences?: UserPreferences
+  preferences?: any
 ): Promise<VectorizationResponse> {
   const startTime = Date.now()
   console.log(`[DOCUMENT VECTORIZATION] Starting vectorization for document ${documentId}, user ${userId}`)
@@ -219,21 +229,14 @@ async function vectorizeDocument(
 
     // Split document into chunks
     console.log(`[DOCUMENT VECTORIZATION] Splitting document into chunks...`)
-    const docs = await textSplitter.createDocuments([document.content], [{
-      document_id: documentId,
-      user_id: userId,
-      thread_id: document.thread_id || null,
-      title: document.title,
-      file_name: document.file_name,
-      file_type: document.file_type
-    }])
+    const chunks = await textSplitter.splitText(document.content)
 
-    console.log(`[DOCUMENT VECTORIZATION] Document split into ${docs.length} chunks`)
+    console.log(`[DOCUMENT VECTORIZATION] Document split into ${chunks.length} chunks`)
 
     // Limit chunks if necessary
-    const limitedDocs = docs.slice(0, maxChunks)
-    const totalChunks = docs.length
-    const processedChunks = limitedDocs.length
+    const limitedChunks = chunks.slice(0, maxChunks)
+    const totalChunks = chunks.length
+    const processedChunks = limitedChunks.length
 
     if (totalChunks > maxChunks) {
       console.warn(`[DOCUMENT VECTORIZATION] Document ${documentId} truncated from ${totalChunks} to ${maxChunks} chunks`)
@@ -241,54 +244,24 @@ async function vectorizeDocument(
 
     console.log(`[DOCUMENT VECTORIZATION] Processing ${processedChunks} chunks (${totalChunks} total)`)
 
-    // Process embeddings in batches to respect API limits
-    console.log(`[DOCUMENT VECTORIZATION] Starting embedding generation in batches of ${VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE}...`)
-    
-    const embeddingsList: number[][] = []
-    const totalBatches = Math.ceil(limitedDocs.length / VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE)
-    
-    for (let i = 0; i < limitedDocs.length; i += VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE) {
-      const batchNumber = Math.floor(i / VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE) + 1
-      const batch = limitedDocs.slice(i, i + VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE)
-      const texts = batch.map(doc => doc.pageContent)
-      
-      console.log(`[DOCUMENT VECTORIZATION] Processing embedding batch ${batchNumber}/${totalBatches} (${batch.length} chunks)`)
-      
-      try {
-        const batchStartTime = Date.now()
-        const batchEmbeddings = await embeddings.embedDocuments(texts)
-        const batchEndTime = Date.now()
-        
-        embeddingsList.push(...batchEmbeddings)
-        
-        console.log(`[DOCUMENT VECTORIZATION] Batch ${batchNumber} completed in ${batchEndTime - batchStartTime}ms`)
-        
-        // Rate limiting delay between batches
-        if (i + VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE < limitedDocs.length) {
-          console.log(`[DOCUMENT VECTORIZATION] Waiting ${VECTORIZATION_CONFIG.RATE_LIMIT_DELAY}ms before next batch...`)
-          await new Promise(resolve => setTimeout(resolve, VECTORIZATION_CONFIG.RATE_LIMIT_DELAY))
-        }
-      } catch (embeddingError) {
-        console.error(`[DOCUMENT VECTORIZATION] Embedding batch ${batchNumber} error:`, embeddingError)
-        throw new Error(`Failed to generate embeddings for batch ${batchNumber}`)
-      }
-    }
+    // Generate embeddings for chunks
+    console.log(`[DOCUMENT VECTORIZATION] Starting embedding generation...`)
+    const embeddings = await generateEmbeddings(limitedChunks)
 
-    console.log(`[DOCUMENT VECTORIZATION] All embeddings generated successfully (${embeddingsList.length} total)`)
+    console.log(`[DOCUMENT VECTORIZATION] Generated embeddings for ${embeddings.length} chunks`)
 
     // Prepare vector chunks for batch insertion
     console.log(`[DOCUMENT VECTORIZATION] Preparing vector chunks for database insertion...`)
     
-    const vectorChunks = limitedDocs.map((doc, index) => ({
+    const vectorChunks = limitedChunks.map((chunk, index) => ({
       document_id: documentId,
       user_id: userId,
       thread_id: document.thread_id || null,
-      content: doc.pageContent,
-      embedding: embeddingsList[index],
+      content: chunk,
+      embedding: embeddings[index],
       metadata: {
-        ...doc.metadata,
         chunk_index: index,
-        chunk_size: doc.pageContent.length,
+        chunk_size: chunk.length,
         document_title: document.title,
         file_name: document.file_name,
         file_type: document.file_type,
@@ -314,7 +287,6 @@ async function vectorizeDocument(
       console.log(`[DOCUMENT VECTORIZATION] Inserting batch ${batchNumber}/${totalInsertBatches} (${batch.length} chunks)`)
       
       try {
-        const insertStartTime = Date.now()
         const { error: insertError } = await supabase
           .from('vector_chunks')
           .insert(batch)
@@ -323,14 +295,12 @@ async function vectorizeDocument(
           throw new Error(`Batch insertion failed: ${insertError.message}`)
         }
 
-        const insertEndTime = Date.now()
         insertedCount += batch.length
         
-        console.log(`[DOCUMENT VECTORIZATION] Batch ${batchNumber} inserted successfully in ${insertEndTime - insertStartTime}ms (${insertedCount}/${vectorChunks.length} total)`)
+        console.log(`[DOCUMENT VECTORIZATION] Batch ${batchNumber} inserted successfully (${insertedCount}/${vectorChunks.length} total)`)
         
         // Small delay between batches to prevent overwhelming the database
         if (i + batchSize < vectorChunks.length) {
-          console.log(`[DOCUMENT VECTORIZATION] Waiting 100ms before next insertion batch...`)
           await new Promise(resolve => setTimeout(resolve, 100))
         }
       } catch (batchError) {
@@ -408,97 +378,7 @@ async function vectorizeDocument(
 }
 
 /**
- * Utility function to process embeddings in batches with rate limiting
- */
-async function processEmbeddingsInBatches(
-  texts: string[],
-  batchSize: number = VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE
-): Promise<number[][]> {
-  console.log(`[EMBEDDING BATCHES] Starting batch processing for ${texts.length} texts in batches of ${batchSize}`)
-  
-  const embeddingsList: number[][] = []
-  const totalBatches = Math.ceil(texts.length / batchSize)
-  
-  for (let i = 0; i < texts.length; i += batchSize) {
-    const batchNumber = Math.floor(i / batchSize) + 1
-    const batch = texts.slice(i, i + batchSize)
-    
-    console.log(`[EMBEDDING BATCHES] Processing batch ${batchNumber}/${totalBatches} (${batch.length} texts)`)
-    
-    try {
-      const batchStartTime = Date.now()
-      const batchEmbeddings = await embeddings.embedDocuments(batch)
-      const batchEndTime = Date.now()
-      
-      embeddingsList.push(...batchEmbeddings)
-      
-      console.log(`[EMBEDDING BATCHES] Batch ${batchNumber} completed in ${batchEndTime - batchStartTime}ms`)
-      
-      // Rate limiting delay between batches
-      if (i + batchSize < texts.length) {
-        console.log(`[EMBEDDING BATCHES] Waiting ${VECTORIZATION_CONFIG.RATE_LIMIT_DELAY}ms before next batch...`)
-        await new Promise(resolve => setTimeout(resolve, VECTORIZATION_CONFIG.RATE_LIMIT_DELAY))
-      }
-    } catch (embeddingError) {
-      console.error(`[EMBEDDING BATCHES] Batch ${batchNumber} error:`, embeddingError)
-      throw new Error(`Failed to generate embeddings for batch ${batchNumber}`)
-    }
-  }
-  
-  console.log(`[EMBEDDING BATCHES] ✅ All batches completed successfully (${embeddingsList.length} embeddings)`)
-  return embeddingsList
-}
-
-/**
- * Utility function to insert vector chunks in batches
- */
-async function insertVectorChunksInBatches(
-  vectorChunks: any[],
-  batchSize: number = VECTORIZATION_CONFIG.BATCH_SIZE
-): Promise<number> {
-  console.log(`[DATABASE BATCHES] Starting batch insertion for ${vectorChunks.length} chunks in batches of ${batchSize}`)
-  
-  let insertedCount = 0
-  const totalBatches = Math.ceil(vectorChunks.length / batchSize)
-  
-  for (let i = 0; i < vectorChunks.length; i += batchSize) {
-    const batchNumber = Math.floor(i / batchSize) + 1
-    const batch = vectorChunks.slice(i, i + batchSize)
-    
-    console.log(`[DATABASE BATCHES] Inserting batch ${batchNumber}/${totalBatches} (${batch.length} chunks)`)
-    
-    try {
-      const insertStartTime = Date.now()
-      const { error: insertError } = await supabase
-        .from('vector_chunks')
-        .insert(batch)
-
-      if (insertError) {
-        throw new Error(`Batch insertion failed: ${insertError.message}`)
-      }
-
-      const insertEndTime = Date.now()
-      insertedCount += batch.length
-      
-      console.log(`[DATABASE BATCHES] Batch ${batchNumber} inserted successfully in ${insertEndTime - insertStartTime}ms (${insertedCount}/${vectorChunks.length} total)`)
-      
-      // Small delay between batches to prevent overwhelming the database
-      if (i + batchSize < vectorChunks.length) {
-        console.log(`[DATABASE BATCHES] Waiting 100ms before next batch...`)
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-    } catch (batchError) {
-      console.error(`[DATABASE BATCHES] Batch ${batchNumber} insertion error:`, batchError)
-      throw batchError
-    }
-  }
-  
-  console.log(`[DATABASE BATCHES] ✅ All batches inserted successfully (${insertedCount} total)`)
-  return insertedCount
-}
-
-/**
- * Vectorize chat history for a specific thread with optimization
+ * Vectorize chat history for a specific thread
  */
 async function vectorizeChatHistory(
   threadId: string, 
@@ -530,8 +410,7 @@ async function vectorizeChatHistory(
 
     console.log(`[CHAT HISTORY VECTORIZATION] Found ${conversations.length} conversations in thread`)
 
-    // Combine conversations into meaningful chunks
-    console.log(`[CHAT HISTORY VECTORIZATION] Creating chat chunks...`)
+    // Create meaningful chunks from conversations
     const chatChunks = createChatChunks(conversations)
 
     if (chatChunks.length === 0) {
@@ -558,12 +437,12 @@ async function vectorizeChatHistory(
 
     console.log(`[CHAT HISTORY VECTORIZATION] Processing ${processedChunks} chat chunks (${totalChunks} total)`)
 
-    // Generate embeddings for chat chunks using batch processing
+    // Generate embeddings for chat chunks
     console.log(`[CHAT HISTORY VECTORIZATION] Starting embedding generation for chat chunks...`)
     const texts = limitedChunks.map(chunk => chunk.content)
-    const embeddingsList = await processEmbeddingsInBatches(texts, VECTORIZATION_CONFIG.MAX_EMBEDDING_BATCH_SIZE)
+    const embeddings = await generateEmbeddings(texts)
 
-    console.log(`[CHAT HISTORY VECTORIZATION] Generated embeddings for ${embeddingsList.length} chat chunks`)
+    console.log(`[CHAT HISTORY VECTORIZATION] Generated embeddings for ${embeddings.length} chat chunks`)
 
     // Prepare vector chunks for chat history
     console.log(`[CHAT HISTORY VECTORIZATION] Preparing vector chunks for database insertion...`)
@@ -572,7 +451,7 @@ async function vectorizeChatHistory(
       user_id: userId,
       thread_id: threadId,
       content: chunk.content,
-      embedding: embeddingsList[index],
+      embedding: embeddings[index],
       metadata: {
         ...chunk.metadata,
         chunk_index: index,
@@ -592,7 +471,38 @@ async function vectorizeChatHistory(
 
     // Insert chat history vector chunks using batch processing
     console.log(`[CHAT HISTORY VECTORIZATION] Starting database insertion in batches of ${batchSize}...`)
-    const insertedCount = await insertVectorChunksInBatches(vectorChunks, batchSize)
+    
+    let insertedCount = 0
+    const totalInsertBatches = Math.ceil(vectorChunks.length / batchSize)
+    
+    for (let i = 0; i < vectorChunks.length; i += batchSize) {
+      const batchNumber = Math.floor(i / batchSize) + 1
+      const batch = vectorChunks.slice(i, i + batchSize)
+      
+      console.log(`[CHAT HISTORY VECTORIZATION] Inserting batch ${batchNumber}/${totalInsertBatches} (${batch.length} chunks)`)
+      
+      try {
+        const { error: insertError } = await supabase
+          .from('vector_chunks')
+          .insert(batch)
+
+        if (insertError) {
+          throw new Error(`Batch insertion failed: ${insertError.message}`)
+        }
+
+        insertedCount += batch.length
+        
+        console.log(`[CHAT HISTORY VECTORIZATION] Batch ${batchNumber} inserted successfully (${insertedCount}/${vectorChunks.length} total)`)
+        
+        // Small delay between batches
+        if (i + batchSize < vectorChunks.length) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      } catch (batchError) {
+        console.error(`[CHAT HISTORY VECTORIZATION] Batch ${batchNumber} insertion error:`, batchError)
+        throw batchError
+      }
+    }
 
     console.log(`[CHAT HISTORY VECTORIZATION] All chat history vector chunks inserted successfully (${insertedCount} total)`)
 
@@ -697,133 +607,13 @@ function createChatChunks(conversations: any[]): Array<{ content: string, metada
 }
 
 /**
- * Archive thread and vectorize its complete history
- */
-async function archiveThread(threadId: string, userId: string): Promise<VectorizationResponse> {
-  try {
-    // Get thread information
-    const { data: thread, error: threadError } = await supabase
-      .from('threads')
-      .select('*')
-      .eq('id', threadId)
-      .eq('user_id', userId)
-      .single()
-
-    if (threadError || !thread) {
-      return {
-        success: false,
-        message: 'Thread not found or access denied',
-        error: threadError?.message
-      }
-    }
-
-    // Get all conversations for the thread
-    const { data: conversations, error: convError } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('thread_id', threadId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-
-    if (convError) {
-      return {
-        success: false,
-        message: 'Failed to retrieve thread conversations',
-        error: convError.message
-      }
-    }
-
-    // Create comprehensive thread archive
-    const archiveContent = createThreadArchive(thread, conversations || [])
-    
-    // Generate embedding for the archive
-    const [archiveEmbedding] = await embeddings.embedDocuments([archiveContent])
-
-    // Store archive in vector_chunks table
-    const { error: insertError } = await supabase
-      .from('vector_chunks')
-      .insert({
-        document_id: null,
-        user_id: userId,
-        content: archiveContent,
-        embedding: archiveEmbedding,
-        metadata: {
-          is_thread_archive: true,
-          thread_id: threadId,
-          thread_title: thread.title,
-          conversation_count: conversations?.length || 0,
-          archive_date: new Date().toISOString(),
-          date_range: {
-            start: thread.created_at,
-            end: thread.updated_at
-          }
-        },
-        chunk_index: 0
-      })
-
-    if (insertError) {
-      return {
-        success: false,
-        message: 'Failed to store thread archive',
-        error: insertError.message
-      }
-    }
-
-    // Update thread status to archived
-    await supabase
-      .from('threads')
-      .update({ status: 'archived' })
-      .eq('id', threadId)
-
-    return {
-      success: true,
-      message: 'Thread successfully archived and vectorized',
-      vectorCount: 1
-    }
-
-  } catch (error) {
-    console.error('Thread archival error:', error)
-    return {
-      success: false,
-      message: 'Thread archival failed',
-      error: error.message
-    }
-  }
-}
-
-/**
- * Create a comprehensive archive of a thread's content
- */
-function createThreadArchive(thread: any, conversations: any[]): string {
-  const archive = [
-    `THREAD ARCHIVE: ${thread.title}`,
-    `Created: ${new Date(thread.created_at).toLocaleString()}`,
-    `Last Activity: ${new Date(thread.updated_at).toLocaleString()}`,
-    `Total Conversations: ${conversations.length}`,
-    '',
-    'CONVERSATION HISTORY:',
-    '===================='
-  ]
-
-  conversations.forEach((conv, index) => {
-    archive.push(
-      `[${index + 1}] ${conv.role.toUpperCase()} (${new Date(conv.created_at).toLocaleString()}):`,
-      conv.content,
-      ''
-    )
-  })
-
-  return archive.join('\n')
-}
-
-/**
  * Main Edge Function handler
  */
 serve(async (req) => {
   const requestStartTime = Date.now()
   console.log(`[EDGE FUNCTION] 🚀 Vectorization request received: ${req.method} ${req.url}`)
   
-  // Handle CORS
+  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     console.log(`[EDGE FUNCTION] Handling CORS preflight request`)
     return new Response('ok', {
@@ -831,6 +621,7 @@ serve(async (req) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Max-Age': '86400',
       }
     })
   }
@@ -846,7 +637,13 @@ serve(async (req) => {
       console.error(`[EDGE FUNCTION] ❌ Authentication failed:`, authError)
       return new Response(
         JSON.stringify({ error: authError || 'Authentication failed' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -860,7 +657,13 @@ serve(async (req) => {
       console.error(`[EDGE FUNCTION] ❌ Missing required fields:`, { type: requestData.type, userId: requestData.userId })
       return new Response(
         JSON.stringify({ error: 'Missing required fields: type and userId' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -869,7 +672,13 @@ serve(async (req) => {
       console.error(`[EDGE FUNCTION] ❌ Unauthorized access: requested user ${requestData.userId} != authenticated user ${user.id}`)
       return new Response(
         JSON.stringify({ error: 'Unauthorized access to resource' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          } 
+        }
       )
     }
 
@@ -887,7 +696,13 @@ serve(async (req) => {
           console.error(`[EDGE FUNCTION] ❌ Missing documentId for document vectorization`)
           return new Response(
             JSON.stringify({ error: 'documentId required for document vectorization' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+            { 
+              status: 400, 
+              headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              } 
+            }
           )
         }
         console.log(`[EDGE FUNCTION] 📄 Starting document vectorization for document ${requestData.documentId}`)
@@ -899,7 +714,13 @@ serve(async (req) => {
           console.error(`[EDGE FUNCTION] ❌ Missing threadId for chat history vectorization`)
           return new Response(
             JSON.stringify({ error: 'threadId required for chat history vectorization' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+            { 
+              status: 400, 
+              headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              } 
+            }
           )
         }
         console.log(`[EDGE FUNCTION] 💬 Starting chat history vectorization for thread ${requestData.threadId}`)
@@ -910,7 +731,13 @@ serve(async (req) => {
         console.error(`[EDGE FUNCTION] ❌ Invalid vectorization type: ${requestData.type}`)
         return new Response(
           JSON.stringify({ error: 'Invalid vectorization type' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
+          { 
+            status: 400, 
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            } 
+          }
         )
     }
 
@@ -957,4 +784,4 @@ serve(async (req) => {
       }
     )
   }
-}) 
+})

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from './supabase'
 
 // Types for Edge Function requests and responses
 export interface VectorizationRequest {
@@ -82,9 +82,8 @@ export interface DeleteThreadResponse {
   error?: string
 }
 
-// Initialize Supabase client
+// Get Supabase URL for Edge Function calls
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!
-const supabase = createClient(supabaseUrl, import.meta.env.VITE_SUPABASE_ANON_KEY!)
 
 /**
  * Get authentication token for Edge Function calls

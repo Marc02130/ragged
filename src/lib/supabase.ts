@@ -47,8 +47,17 @@ export const auth = {
   },
 
   onAuthStateChange: (callback: (user: User | null) => void) => {
-    return supabase.auth.onAuthStateChange((event, session) => {
-      callback(session?.user || null);
+    return supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (user) {
+        callback({
+          id: user.id,
+          email: user.email || '',
+          created_at: user.created_at,
+        });
+      } else {
+        callback(null);
+      }
     });
   },
 };
@@ -107,7 +116,7 @@ export const threads = {
         status: 'archived',
         last_activity_at: new Date().toISOString()
       })
-      .eq('thread_id', threadId)
+      .eq('id', threadId)
       .eq('user_id', user.id);
 
     return { data: !error, error: error?.message };
@@ -125,7 +134,7 @@ export const threads = {
         status: 'active',
         last_activity_at: new Date().toISOString()
       })
-      .eq('thread_id', threadId)
+      .eq('id', threadId)
       .eq('user_id', user.id);
 
     return { data: !error, error: error?.message };
@@ -138,7 +147,7 @@ export const threads = {
     }
 
     // Call Edge Function to handle deletion and archival
-    const { data, error } = await supabase.functions.invoke('delete-thread', {
+    const { error } = await supabase.functions.invoke('delete-thread', {
       body: { threadId },
     });
 
@@ -182,7 +191,7 @@ export const documents = {
       const filePath = `/users/${user.id}/threads/${threadId}/${fileName}`;
 
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file);
 
@@ -194,6 +203,7 @@ export const documents = {
       const { data: docData, error: docError } = await supabase
         .from('documents')
         .insert({
+          title: file.name, // Use filename as title
           thread_id: threadId,
           user_id: user.id,
           file_path: filePath,
@@ -209,10 +219,24 @@ export const documents = {
         throw new Error(`Document record creation failed: ${docError.message}`);
       }
 
-      // Trigger vectorization via Edge Function
-      await supabase.functions.invoke('vectorize-document', {
+      // Extract text content from the uploaded file
+      const { error: extractError } = await supabase.functions.invoke('extract-text', {
         body: {
-          docId: docData.doc_id,
+          documentId: docData.id,
+          userId: user.id,
+          filePath: filePath,
+        },
+      });
+
+      if (extractError) {
+        throw new Error(`Text extraction failed: ${extractError.message}`);
+      }
+
+      // Trigger vectorization via Edge Function
+      await supabase.functions.invoke('vectorize', {
+        body: {
+          type: 'document',
+          documentId: docData.id,
           userId: user.id,
           threadId,
         },
@@ -240,7 +264,7 @@ export const documents = {
       .select('*')
       .eq('user_id', user.id)
       .eq('thread_id', threadId)
-      .order('uploaded_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     return { data: data || [], error: error?.message };
   },
@@ -281,7 +305,7 @@ export const chat = {
       .select('*')
       .eq('user_id', user.id)
       .eq('thread_id', threadId)
-      .order('timestamp', { ascending: true });
+      .order('created_at', { ascending: true });
 
     return { data: data || [], error: error?.message };
   },

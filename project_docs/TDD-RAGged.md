@@ -6,14 +6,14 @@ This Technical Design Document (TDD) provides a detailed blueprint for implement
 
 ### 1.2 Scope
 - Aligns with PRD: User auth, threaded document management, vectorization, RAG queries, chat history recall, and archival on deletion.
-- Tech Stack: React frontend, Supabase (Auth, Storage, DB, Edge Functions), Langchain.js, OpenAI API.
+- Tech Stack: React frontend, Supabase (Auth, Storage, DB, Edge Functions), direct OpenAI API client, PostgreSQL with PGVector.
 - Assumptions: Single-user focus; initial scale for 100 users; no advanced features like multi-tenancy.
 
 ### 1.3 References
 - PRD (Trimmed Version)
 - Supabase Documentation
-- Langchain.js Docs
 - OpenAI API Reference
+- PostgreSQL PGVector Documentation
 
 ## 2. System Architecture
 ### 2.1 High-Level Overview
@@ -21,7 +21,7 @@ This Technical Design Document (TDD) provides a detailed blueprint for implement
 - **Backend**: Serverless via Supabase Edge Functions (TypeScript) for business logic (e.g., vectorization, queries).
 - **Database**: Supabase Postgres with PGVector for vector storage.
 - **Storage**: Supabase Storage for documents (user/thread-scoped buckets).
-- **Integrations**: OpenAI for embeddings/completions; Langchain for chunking/RAG chains.
+- **Integrations**: OpenAI for embeddings/completions; direct OpenAI client for all AI operations.
 - **Data Flow**: User → React → Edge Functions → Supabase DB/Storage → OpenAI → Response.
 
 ### 2.2 Component Diagram
@@ -104,6 +104,43 @@ ALTER TABLE user_info ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "user_own_data" ON user_info FOR ALL USING (auth.uid() = user_id);
 
 -- Similar policies for other tables...
+
+-- PostgreSQL RPC function for vector similarity search
+CREATE OR REPLACE FUNCTION search_similar_chunks(
+  query_embedding vector(1536),
+  p_user_id uuid,
+  p_thread_id uuid,
+  match_count int DEFAULT 10,
+  include_chat_history boolean DEFAULT true
+)
+RETURNS TABLE (
+  content text,
+  metadata jsonb,
+  embedding vector(1536),
+  thread_id uuid,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    vc.content,
+    vc.metadata,
+    vc.embedding,
+    vc.thread_id,
+    1 - (vc.embedding <=> query_embedding) as similarity
+  FROM vector_chunks vc
+  WHERE vc.user_id = p_user_id
+    AND vc.thread_id = p_thread_id
+    AND (
+      include_chat_history = true
+      OR (vc.metadata->>'is_chat_history')::boolean IS NOT TRUE
+    )
+  ORDER BY vc.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
 ```
 
 ### 3.2 Data Flow Examples
@@ -115,23 +152,43 @@ CREATE POLICY "user_own_data" ON user_info FOR ALL USING (auth.uid() = user_id);
 - **/auth** (Handled by Supabase Auth).
 - **POST /threads**: Create thread (body: {title}).
 - **GET /threads**: List user threads.
-- **DELETE /threads/{thread_id}**: Delete with archival (confirm in body).
-- **POST /upload/{thread_id}**: Upload document (multipart form).
-- **POST /query/{thread_id}**: RAG query (body: {query}).
-- **POST /vectorize-chat/{thread_id}**: Manual/periodic chat vectorization.
+- **POST /rag-query**: RAG query with similarity search (body: {threadId, userId, query, ...}).
+- **POST /delete-thread**: Delete thread with archival (body: {threadId, userId}).
+- **POST /extract-text**: Extract text from uploaded documents.
+- **POST /vectorize**: Vectorize document chunks and store embeddings.
 
 ### 4.2 Example Edge Function Skeleton (TypeScript)
 ```typescript
-// Example: vectorize-document
-export const vectorizeDocument = async (req: Request) => {
-  const { docId, userId, threadId } = await req.json();
-  // Auth check...
-  const document = await loadFromStorage(filePath);
-  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
-  const chunks = await splitter.splitDocuments([document]);
-  const embeddings = await openAI.embeddings.create({ model: 'text-embedding-ada-002', input: chunks.map(c => c.pageContent) });
-  // Insert to vector_chunks...
-  return new Response(JSON.stringify({ status: 'ready' }));
+// Example: rag-query function
+import OpenAI from "openai"
+
+const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') })
+
+export const ragQuery = async (req: Request) => {
+  const { threadId, userId, query } = await req.json();
+  
+  // Generate query embedding
+  const embeddingResponse = await openai.embeddings.create({
+    model: 'text-embedding-ada-002',
+    input: query,
+  });
+  const queryEmbedding = embeddingResponse.data[0].embedding;
+  
+  // Use PostgreSQL RPC for similarity search
+  const { data: chunks } = await supabase.rpc('search_similar_chunks', {
+    query_embedding: queryEmbedding,
+    p_user_id: userId,
+    p_thread_id: threadId,
+    match_count: 6
+  });
+  
+  // Generate response with context
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{ role: 'user', content: enhancedPrompt }]
+  });
+  
+  return new Response(JSON.stringify({ response: response.choices[0].message.content }));
 };
 ```
 
@@ -143,12 +200,12 @@ export const vectorizeDocument = async (req: Request) => {
 4. Update `documents.vector_status`.
 
 ### 5.2 RAG Query
-1. Embed user query.
-2. PGVector similarity search (cosine, threshold 0.7, top 10).
-3. Fetch recent chat history from `conversations`.
-4. Augment prompt with context/history.
-5. OpenAI completion.
-6. Save messages to `conversations`.
+1. Embed user query using OpenAI embeddings API.
+2. PostgreSQL RPC function `search_similar_chunks` performs vector similarity search (cosine distance, threshold 0.1, top 6 per thread).
+3. Filter chunks by similarity threshold and apply source weighting.
+4. Augment prompt with retrieved context and chat history.
+5. Generate response using OpenAI GPT-4.
+6. Save conversation to `conversations` table and optionally vectorize for future recall.
 
 ### 5.3 Thread Deletion
 1. Confirm via UI.
@@ -168,8 +225,9 @@ export const vectorizeDocument = async (req: Request) => {
 
 ### 6.2 Performance
 - Async processing for vectorization.
-- Caching for frequent queries (optional Redis).
-- Target: <3s query response.
+- PostgreSQL RPC function for optimized vector similarity search.
+- Target: <8s query response (actual: ~6-8s including embedding generation and response).
+- Vectorization: <5s per document.
 
 ### 6.3 Error Handling
 - Retry on OpenAI failures.
