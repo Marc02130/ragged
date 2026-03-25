@@ -1,0 +1,528 @@
+Tag Name,Category,Description,Tag Help
+AI Summarize Experiments,ELN Template,Create a text entry at the end of the first tab of the experiment that uses AI to summarize the experiment based off of the generated experiment PDF.,"Plugins
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: AI SUMMARIZE EXPERIMENT PDF
+Permutations
+AI SUMMARIZE EXPERIMENT PDF"
+Add Global Records,ELN Template,Use this tag to when using 'Add Global Records' to add them to the Aether instead of under the Experiment record,"Plugins
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Add to Aether
+Permutations
+ADD GLOBAL RECORDS TO AETHER"
+Complete Workflow,Workflow Control,Completes a notebook experiment with various options to enhance the user experience in an NGS lab,"Plugins
+Overview
+The complete workflow button will give the user one button to manage the completion of a notebook. This button will provide consistency across ELN templates throughout a process while allowing flexibility for admins to dictate whether all entries need to be completed prior to notebook completion or if e-signatures are required.
+Description
+The SHOW COMPLETE WORKFLOW BUTTON tag must be present in the Notebook Options for this button to appear.
+All option values are not required. If no option values are given, the following defaults will apply:
+E-Signatures are required
+All entries must be validated prior to completing the workflow
+Allows anyone with 'write' access (Author or Owner) to complete the workflow
+Values/Modifiers
+Modifiers give the administrator a means to adjust the Complete Workflow button to fit the needs of the lab without requiring consulting work. The following option values are available:
+ESIGN NOT REQUIRED
+By default, esign is required by any user attempting to complete a workflow. If present, users with proper permissions (Authors and Owners) are able to complete the workflow immediately without providing login credentials.
+NO COMMENT REQUIRED FOR ESIGN
+Prevents the comment box from appearing during e-sign allowing for only username/password to continue. Only applicable if 'ESIGN NOT REQUIRED' is not also present.
+RESTRICT TO OWNER
+The generic E-Sign button for the ELN restricts completion to only the Owner. By default, the Complete Workflow button allows anyone with Write access to be able to complete workflows. However, this can be overridden to function similarly to the E-Sign button and require the Owner to e-sign.
+ALL ENTRY VALIDATIONS NOT REQUIRED
+By default all entries will be required to be validated before, but with this tag you will be able to complete the workflow without validating all entries.
+Experiment Entry Tags
+WORKFLOW COMPLETED ON VALIDATION
+If at least one experiment entry contains this tag, it is required to be validated prior to the workflow being completed. Any other entry in the experiment, other than those with the REQUIRES MANUAL VALIDATION, will not impact the completion of the workflow whether they are validated or not.
+REQUIRES MANUAL VALIDATION
+ Any experiment entry with this tag must be validated prior to the completion of the workflow.
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Show Complete Workflow Button
+If this key is present, the ""Complete Workflow"" button will show in any experiment built from this template.
+Permutations
+SHOW COMPLETE WORKFLOW BUTTON
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Esign Not Required
+If present, the user completing the workflow will not be prompted to verify login credentials
+Permutations
+ESIGN NOT REQUIRED
+Tag Value: Restrict to Owner
+If present, only the owner can complete the workflow.
+Permutations
+RESTRICT TO OWNER
+Tag Value: All Entry Validations Not Required
+This tag will allow the ""Complete Workflow"" button shown to be used without validating all entries.
+NOTE: This tag will be overridden by the WORKFLOW COMPLETED ON VALIDATION and REQUIRES MANUAL VALIDATION entry level tags. If those tags are present on any Experiment Entry, those corresponding entries will require validation prior to completing the workflow.
+Permutations
+ALL ENTRY VALIDATIONS NOT REQUIRED
+ALL ENTRY VALIDATIONS NOT REQUIRED, ESIGN NOT REQUIRED
+Tag Value: No Comment Required
+E-Sign dialog does not prompt for or require a comment to be entered for an e-signature to be accepted. Only applies if 'ESIGN NOT REQUIRED' is not present. 
+Permutations
+NO COMMENT REQUIRED FOR ESIGN
+Tag Value: Disable PDF Generation
+Disables the PDF Generation on using the Complete Workflow button
+Permutations
+DISABLE PDF GENERATION
+Notebook Key: Hide Complete Workflow Button
+If this key is present, the ""Complete Workflow"" button will not show in any experiment built from this template.
+Permutations
+HIDE COMPLETE WORKFLOW BUTTON
+E-Notebook Entry Options
+The following is a list of E-Notebook Entry option keys.
+Notebook Entry Key: Workflow Completed on Validation
+Applicable Entry Types: Attachment,Form,Plugin,Table
+When the ""Complete Workflow"" button is triggered, the entry containing this tag is required to be submitted in order for the workflow to be successfully completed. 
+Any other entry that is not validated will be considered completed as long as this entry is completed unless containing the ""REQUIRES MANUAL VALIDATION"" tag
+Permutations
+WORKFLOW COMPLETED ON VALIDATION
+Notebook Entry Key: Requires Manual Validation
+Applicable Entry Types: Attachment,Form,Plugin,Table
+If present, the associated Experiment Entry must be validated by the user (thereby running any associated initialization or validation plugins) prior to completing a workflow. 
+This tag will override the Notebook Entry Option Value ""ALL ENTRY VALIDATIONS NOT REQUIRED"".
+Permutations
+REQUIRES MANUAL VALIDATION"
+Create Batch For Next Process Workflow,Process Tracking,"This tag runs on submit of a task and gathers all samples and plate wells attached to current active task and creates a Batch record with a Batch Workflow of the next process workflow those samples are assigned to. It is given a unique Batch Id and it sets the Batch name to either the StorageUnitId of the Storage Unit those samples are stored or to the Plate Id if the task option value \""PlateWell\"" is  associated with the task option.","Plugins
+CreateBatchOnSubmit [Task: Submit] (LATE + 2)
+CREATE BATCH FOR NEXT PROCESS WORKFLOW task option runs on submit of a task and gathers all samples and plate wells attached to current active task and creates a Batch record with a Batch Workflow of the next process workflow those samples are assigned to. It is given a unique Batch Id and it sets the Batch name to either the StorageUnitId of the Storage Unit those samples are stored or to the Plate Id if the task option value ""PlateWell"" is associated with the task option.
+""GROUP RECORDS BY FIELD: dataTypeName(fieldName)""
+This is a task option value used with the CREATE BATCH FOR NEXT PROCESS WORKFLOW task option key. Defining this value indicates that all Sample and PlateWell records that are ready for further processing and that are attached to the current task should be batched in accordance to some specified set of attributes.
+Attribute specification is performed by defining an ancestor related to the to-be-batched samples and a set of field names. The system will then group all samples sharing the same values in the indicated ancestor fields and create a batch from the grouped samples that will be set as ready for the next workflow in the process associated with batched samples.
+Note: The next workflow in the process is used by default as a grouping attribute, so that samples moving onto workfow a will not be in the same batch as samples moving onto workflow b.
+Defining an ancestor data type is done by replacing the dataTypeName value in this task option value with the proper data type name. Similarly, defining the fields that are to be used in sample grouping is done by replacing the fieldName value in the task option value with appropriate field names. A delimiter for field names is a colon (:). Additionally, if the samples themselves are to be used as records containing attribute values, use the keyword this in place of the data type name.
+Upon batch creation, the batch name will be set to consist of the attribute values used in its creation.
+EXAMPLES
+Task Option Key	Task Option Value	Description
+CREATE BATCH FOR NEXT PROCESS WORKFLOW	GROUP RECORDS BY FIELD: Project(ProjectId)	Create batches of samples where each batch will consist of samples or plate wells related to the same Project record.
+CREATE BATCH FOR NEXT PROCESS WORKFLOW	GROUP RECORDS BY FIELD: this(ExemplarSampleType : Species)	Create batches of samples where each batch will consist of samples or plate wells that have identical sample types and that are of the same species.
+""USE EXISTING BATCH IF AVAILABLE""
+This is a task option value used with the CREATE BATCH FOR NEXT PROCESS WORKFLOW task option key and the GROUP RECORDS BY FIELD: dataTypeName(fieldName) task option value. This value indicates that when the samples and plate wells are grouped in accordance to specifications defined in the GROUP RECORDS BY FIELD: dataTypeName(fieldName) task option value, then instead of immediately creating a batch, they system should first attempt to update an existing batch that is defined with the same parameters.
+Note: If an existing batch is found, it will only be updated if it does not have any parent records associated with it. A batch with parent records is regarded as one that has completed it's associated workflow or is in process of one.
+EXAMPLE
+Task Option Key	Task Option Value	Description
+CREATE BATCH FOR NEXT PROCESS WORKFLOW	GROUP RECORDS BY FIELD: Project(ProjectId), USE EXISTING BATCH IF AVAILABLE	Create batches of samples where each batch will consist of samples or plate wells related to the same Project record. If a batch with same parameters already exists, and is not in or completed a workflow, it will be updated with these additional samples.
+Task Option Keys
+The following is a list of task option keys that can be used on workflow tasks.
+Task Key: Create Batch For Next Process Workflow
+Permutations
+CREATE BATCH FOR NEXT PROCESS WORKFLOW
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Group Records By Field
+Permutations
+.*GROUP RECORDS BY FIELD:\s*([a-zA-Z0-9]+)\(\s*([a-zA-Z0-9,\s]+)\s*\).*
+Tag Value: Use Existing Batch If Available
+Permutations
+.*USE\s+EXISTING\s+BATCH\s+IF\s+AVAILABLE.*
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Create Batch For Next Process Workflow For ELN
+On E-Sign complete of a notebook, if the notebook has this tag, it will do the following:
+Take the lowest hierarchical samples (aliquots/pools, etc.) of samples in the notebook.
+If they are not failed, they will add them to a batch
+Then the batch automatically queued using one of the assigned processes of one of the samples.
+Permutations
+CREATE BATCH FOR NEXT PROCESS WORKFLOW"
+ESignature Plugins,Field Validation,These are a collection of plugins which supports E-signature features.,"Plugins
+LockEntryValidation [ENotebook Entry: Validation] (MIDDLE)
+LockNotebook [ENotebook: Main Toolbar] (MIDDLE)
+UnlockEntry [ENotebook Entry: Toolbar] (MIDDLE)
+UnlockNotebook [ENotebook: Main Toolbar] (MIDDLE)
+ViewNotebookEntryESignature [ENotebook Entry: Toolbar] (MIDDLE)
+ViewNotebookESignature [ENotebook: Main Toolbar] (MIDDLE)
+LockEntryToolbar [ENotebook Entry: Toolbar] (MIDDLE)
+E-Signature for Electronic Notebook
+Sapio ELN allows users to e-sign notebooks and individual entries in notebooks and work them throughout an approval process. The plugins are tag driven so the button would only appear on buttons where e-signature makes sense. It is possible to turn on and off the features individually. For example, some notebooks may not allow ELN admins to unlock, some notebooks always requires approval, some notebooks may require approvals for entries but not the notebook. This documentation describes how to use all of these options.
+Any user who have read access to a notebook may put their signature on a notebook with signing enabled for the user role. However, the effect of the signature depends on the user role in the notebook. Owner will first sign with the notebook unlocked, then other users would sign when the notebook is locked. Once the notebooks are locked, authors may no longer edit. Depending on configurations, all other authors may be required to sign at this point. Afterwards, approvers, reviewers, and witnesses may sign as long as their signatures are required and the notebook is in the state awaiting for approval.
+The configurations may be defined by either Exemplar ELN Configurations, or notebook and entry options on templates. The template options takes priority over settings defined in Exemplar ELN Configurations.
+Notebooks may require some or all entries to be completed before anyone can continue with E-Sign process. This is customizable through additional experiment and entry keys. See key descriptions for details.
+The Approval Process
+(Owner Starts E-Sign Process) -> (Optional: all other authors signs) -> (Optional: One Witness) -> (Optional: One Reviewer) -> (Optional: One Approver)
+These are steps a notebook/entry would go through for a typical approval process:
+The notebook/entry has e-sign signature enabled.
+The author finish all changes to the notebook finishes assigning user roles. Then either one author or the owner signs off the notebook. At this point, all user roles are locked in. This means no one can change the author/approver/reviewer/witness list. During the sign-off, the author enters an approval due date. The due date is optional and will appear in log and notifications if specified.
+Everyone who is not the author or owner whose signatures are required by the tag option now signs off. The order is Witness->Reviewer->Approver. Once a user of that role signs off, E-sign will progress to the next role and no other users in the same role may change the verdict.
+During signing, any user may enter a verdict. Even if another user in the same role had previously accepted the notebook or entry.
+If the verdict is Accepted
+If this is the last signature required, then the status will be changed to Completed - Approved.
+If it still needs more signatures, then the status will still be Locked - Awaiting Approval. But a notification will still be sent to the authors and owners.
+If the verdict is Rejected, the notebook is marked as Rejected - Final, and cannot be edited further.
+If the verdict is Changes Required, the notebook is marked as Unlocked - Changes Required. Go back to step 2.
+A notification will be sent to every author and owner of the notebook.
+Owners and Authors
+Only owner may start E-sign process. Other authors may not sign until owner signs first.
+If owner and author are both specified in options,the owner must initiate the E-sign process. Afterwards, all authors must complete e-sign before approver/reviewer/witnesses are notified for their E-signature. If some author want to make changes the author can unlock the notebook.
+If owner is specified in options, but author is not, then only the owner may E-sign.Other authors do not participate in this E-sign process.
+E-Sign Notebooks Without Approval
+Notebooks which are not eligible for the approval process may be signed by authors to lock the notebook and set the notebook status to Completed. After the notebook is locked, authors are no longer allowed to edit the notebook.
+This is enabled by the tag option ""Owner"", which specifies only owner signatures are required, or not having a tag option at all and also leave E-Signature fields blank in exemplar configurations.
+ELN Admin Unlock
+An ELN admin may always unlock any notebook or any notebook entry as long as it makes sense. They will first acquire access to the notebook, then the unlock button will appear for them to unlock the notebook or notebook entry.
+An ELN admin may unlock the notebook if and only if the status of the notebook is Locked(Waiting for Approval/Rejected Final) or Completed(Completed or Completed with Approval).
+An ELN admin may unlock an entry in notebook if and only if all of the followings are true:
+The notebook is currently unlocked. If the notebook is locked, the admin needs to first unlock the notebook before unlocking any entries in the notebook.
+The status of the entry is Locked(Waiting for Approval/Rejected Final) or Completed(Completed or Completed with Approval).
+Once the ELN admin performs any of these actions, all authors of the notebook will be notified about the unlock action via both broadcast message and email. This notification cannot be suppressed by tag options.
+The admin unlock is a special e-sign action which also requires the admin to re-authenticate.
+Only the ELN Admin, owner of the experiment, and the original creator of the entry may unlock the entry while the entry is locked during E-sign process.
+Authentication Form
+The authentication form will be displayed for each E-sign action, including locking and unlocking. The form may provide additional fields to fill. Author E-sign requires authors to fill in a due date, Approver E-Sign requires approvers to fill in a verdict.
+All e-signatures requires the username of the e-authentication form to match the username of the user logged in. It also requires the password to match the password of the current user. The comment is optional and will be shown in the view e-sign history.
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Show ELN Main Toolbar E-Sign Button
+When this tag is on the notebook, a toolbar button will be shown on the notebook toolbar. 
+The toolbar button will not be shown if the user is not an author and no signature is required for the user role specified in the tag value. See the tag value for details.
+Permutations
+SHOW ELN MAIN TOOLBAR ESIGN BUTTON
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Roles Need Signatures
+The notebook is marked as completed only if there is one user in each role who have signed it before after the last unlock E-signature.
+Author must be present for the tag to function.
+If owner is specified, only owner may start the signing process. If author and owner are both specified, and another author exists in notebook, then it requires both the owner and another author to sign.
+Permutations
+Author
+Owner
+Owner:Author
+Owner:Author:Approver
+Author:Approver
+Author:Approver:Reviewer:Witness
+Colon-delimited roles which require E-Signature
+Notebook Key: Show ELN Main Toolbar E-Sign History
+When this is on the notebook, a view history button will appear on the notebook's main toolbar to view notebook-level signatures.
+Deprecated: Now always show up per CR-22400.
+Permutations
+SHOW ELN MAIN TOOLBAR ESIGN HISTORY
+Notebook Key: Ensure Required Entries Submitted
+When this tag is on a notebook experiment which have E-Signature activated, the E-Sign toolbar button for notebook will not allow user to continue until all experiment entries with key ENTRY STATUS MUST BE COMPLETED BEFORE ESIGN EXPIREMENT are either Completed - Approved or Completed.
+Permutations
+ENSURE REQUIRED ENTRIES SUBMITTED
+Notebook Key: Ensure All Entries Submitted
+If this option is enabled for notebook experiment which have E-Signature enabled, then all entries must be either Completed - Approved or Completed before users can start E-Sign process for the notebook or add any signatures..
+This tag has higher priority than ENSURE REQUIRED ENTRIES SUBMITTED if both are specified on the same notebook experiment.
+Permutations
+ENSURE ALL ENTRIES SUBMITTED
+Notebook Key: E-SIGN EXPERIMENT DIALOG
+Functions that can be applied to the E-Sign dialog for Experiments.
+Permutations
+E-SIGN EXPERIMENT DIALOG
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: NO COMMENT REQUIRED
+Do not display the Comments field on the E-Sign dialog.
+Permutations
+NO COMMENT REQUIRED
+Notebook Key: Hide Esign Button
+When this tag is on an experiment that has E-Signature activated, the E-Sign toolbar button for the experiment will not show.
+Permutations
+HIDE ESIGN BUTTON
+E-Notebook Entry Options
+The following is a list of E-Notebook Entry option keys.
+Notebook Entry Key: ELN Entry Submit Require E-Signature
+Applicable Entry Types: Attachment,Form,Plugin,Table
+When this is toggled, every time an author submits an entry with the green check-mark button it will require the user to E-Sign.
+In addition, a toolbar button will show up for approver/reviewer/witness on the entry if the entry is not completed/rejected.
+The button will not show up if the notebook is completed or rejected final.
+The toolbar button will not be shown if the user is not an author and no signature is required for the user role specified in the tag value. See the tag value for details.
+Permutations
+ELN ENTRY SUBMIT REQUIRE ESIGN
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Roles Need Signatures
+The notebook is marked as completed only if there is one user in each role who have signed it before after the last unlock E-signature.
+Author must be present for the tag to function.
+If owner is specified, only owner may start the signing process. If author and owner are both specified, and another author exists in notebook, then it requires both the owner and another author to sign.
+Permutations
+Author
+Owner
+Owner:Author
+Owner:Author:Approver
+Author:Approver
+Author:Approver:Reviewer:Witness
+Colon-delimited roles which require E-Signature
+Notebook Entry Key: Show ELN Entry Toolbar E-Sign History
+Applicable Entry Types: Attachment,Form,Plugin,Table
+When this is on the entry, a button will appear the entry toolbar under the notebook to view all signatures for the entry.
+Deprecated: Now always show up per CR-22400.
+Permutations
+SHOW ELN ENTRY TOOLBAR ESIGN HISTORY
+Notebook Entry Key: Entry Status Must be Completed Before ESign Experiment
+Applicable Entry Types: Form,Table,Attachment,Plugin
+If ENSURE REQUIRED ENTRIES SUBMITTED is on the notebook experiment then this entry must be either Completed - Approved or Completed before users can start E-Sign process for the notebook experiment or add any signatures.
+This tag has no function if ENSURE REQUIRED ENTRIES SUBMITTED does not exist in the notebook experiment, or if ENSURE ALL ENTRIES SUBMITTED is on notebook experiment.
+Permutations
+ENTRY STATUS MUST BE COMPLETED BEFORE ESIGN EXPIREMENT
+Notebook Entry Key: E-SIGN ENTRY DIALOG
+Applicable Entry Types: Attachment,Form,Plugin,Table
+Functions that can be applied to the E-Sign dialog for Entries.
+Permutations
+E-SIGN ENTRY DIALOG
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: NO COMMENT REQUIRED
+Do not display the Comments field on the E-Sign dialog.
+Permutations
+NO COMMENT REQUIRED"
+Fail Or Reprocess Records,Process Tracking,"This tag works with process tracking of records via a status field, where the status field will indicate if the records are passed, failed or they should be reprocessed","Plugins
+FailOrReprocessSamplesOnEntrySubmit [ENotebook Entry: Validation] (LAST)
+Field Tags
+The following is a list of field tags that can be added to fields in data designer.
+Field Tag: Handle Reprocessing Field Tag
+Valid on these types of fields: Pick List,Selection List,Text
+Permutations
+<!-- HANDLE REPROCESSING -->
+Field Tag: Sample Status Comment
+Valid on these types of fields: Selection List,Pick List,Text
+Mark a field as one that will contain comments pertaining to the status change of the sample. This would pertain to failed samples, reprocessed samples, and ones where a sample status override has occurred.
+Permutations
+<!-- SAMPLE STATUS COMMENT -->"
+HT Indexing,Multiplexing,Enables Initialization/Validation plugins for high throughput indexing.,"Plugins
+This tag is used to run the Initialization and Validation plugins used for high-throughput indexing and will be automatically added to a table created using the High Throughput Pooling grabber.
+Field Tags
+The following is a list of field tags that can be added to fields in data designer.
+Field Tag: HT Indexing Plate ID
+Valid on these types of fields: Text
+Permutations
+.*<!--\s+HT\s+Indexing\s+Plate\s+ID\s+-->.*
+Field Tag: HT Indexing Index Type
+Valid on these types of fields: Selection List
+Permutations
+.*<!--\s+HT\s+Indexing\s+Index\s+Type\s+-->.*
+Field Tag: HT Indexing Set Name
+Valid on these types of fields: Selection List
+Permutations
+.*<!--\s+HT\s+Indexing\s+Set\s+Name\s+-->.*
+Protocol Options
+The following is a list of Protocol option keys.
+Protocol Key: Initialize HT Indexing Step On Experiment Launch
+Permutations
+INITIALIZE HT INDEXING STEP ON EXPERIMENT LAUNCH
+Step Options
+The following is a list of Step option keys.
+Step Key: INDEX HIGH THROUGHPUT PLATES
+Applicable Step Types:
+Permutations
+INDEX\s*HIGH\s*THROUGHPUT\s*PLATES"
+HT Pooling,Aliquoting,Enables Initialization/Validation plugins for high throughput pooling.,"Plugins
+This tag is used to run the Initialization and Validation plugins used for High-throughput Pooling and will be automatically added to a table created using the High Throughput Pooling grabber.
+Field Tags
+The following is a list of field tags that can be added to fields in data designer.
+Field Tag: HT Pooling Plate ID
+Valid on these types of fields: Text
+Permutations
+<!-- HT Pooling Plate ID -->
+Field Tag: HT Pooling Tube Number
+Valid on these types of fields: Long Integer
+Permutations
+<!-- HT Pooling Tube Number -->
+Protocol Options
+The following is a list of Protocol option keys.
+Protocol Key: Initialize HT Pooling Step On Experiment Launch
+When the experiment is launched for the first time, if a step with the HIGH THROUGHPUT POOLING tag exists, it will be initialized without requiring users to click on it.
+Permutations
+INITIALIZE HT POOLING STEP ON EXPERIMENT LAUNCH
+Step Options
+The following is a list of Step option keys.
+Step Key: High Throughput Pooling
+Applicable Step Types:
+Permutations
+HIGH THROUGHPUT POOLING
+Step Key: Default Target Volume
+Applicable Step Types:
+Initialize the high throughput normalization entry with a default target volume.
+Tag usage example: 
+Key: DEFAULT TARGET VOLUME FOR HT POOLING
+Value: 50
+When the entry containing this tag initializes, the target volume on that entry would be set to 50.
+Permutations
+DEFAULT TARGET VOLUME FOR HT POOLING
+Step Key: High Throughput Normalization
+Applicable Step Types:
+Perform normalization on the created pools.
+Permutations
+HIGH THROUGHPUT NORMALIZATION"
+Hide Buttons From Work Queue Toolbar,Work Queue,Add data type name to delineated list to hide the corresponding button from the work queue toolbar,"Plugins
+This tag is intended to hide buttons to show data record views on a workflow in the work queue. 
+When the work queue retrieves workflow data, the plugin will parse the delineated lists of data record types in the tag. When a workflow is selected in the work queue view, if a button for the view has a corresponding data type listed, the button will not show. 
+Task Option Keys
+The following is a list of task option keys that can be used on workflow tasks.
+Task Key: Hide Buttons From Work Queue Toolbar Task Key
+Permutations
+HIDE BUTTONS FROM WORK QUEUE TOOLBAR
+Workflow Options
+The following is a list of task option keys that can be used to workflow by editing the working via workflow manager..
+Workflow Key: Hide Buttons From Work Queue Toolbar Workflow Key
+Permutations
+HIDE BUTTONS FROM WORK QUEUE TOOLBAR
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Hide Buttons From Work Queue Toolbar
+If hiding multiple buttons, do so with a "","" splitting the option values. Note that a space will cause an option to not get registered.
+Correct: ""Plate,StorageUnit""
+Incorrect: ""Plate, StorageUnit""
+Permutations
+HIDE BUTTONS FROM WORK QUEUE TOOLBAR
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Plate Tag Value
+Hides the Plate View from the Workqueue toolbar
+Permutations
+Plate
+Tag Value: StorageUnit Tag Value
+Hides the Storage Unit View from the workqueue toolbar
+Permutations
+StorageUnit
+Tag Value: Create Batches Value
+Removes the Create Batch button from the Work Queue associated with notebook it is on. Added in 23.1.0-LIMS21.11
+Permutations
+Create Batch"
+Hide Default ELN Feature,ELN Template,"In a comma-separated value list, specify a list of features which will not show up for the template.","Plugins
+DefaultELNGenericPlugin
+By default, many toolbar buttons and grabber plugins will show up in ELN Generic. This tag allows developers to control which buttons to show in the toolbars for the template.
+This tag will toggle visibility of the following types of ELN Generic Plugins:
+ELN Notebook Experiment Toolbar
+ELN Experiment Entry Toolbar
+ELN Grabber Toolbar
+This is a blacklist which will take priority over all other conditions for visibility of the buttons.
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Hide Default ELN Feature
+Toggles on the feature.
+Permutations
+HIDE DEFAULT ELN FEATURE
+HIDE DEFAULT ELN FEATURES
+Hide Default ELN Feature
+Hide Default ELN Features
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: Comma Separated Black List
+In a comma-separated list, specifies which buttons will always be invisible for the template.
+Permutations
+Sample Importer, DataRecord Importer, View Notebook E-Signature, View Entry E-Signature
+View Notebook Signatures Still Needed for Approval
+View Entry Signatures Still Needed for Approval
+View List of Notebooks Still Need Signatures"
+Max Limit of Plates,Work Queue,Specifies the maximum number of plates that could be launched into a experiment notebook,"Plugins
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Max Limit of Plates
+Permutations
+ALLOW UP TO 5 PLATES"
+Max Limit of Samples,Work Queue,Specifies the maximum number of samples that could be launched into a experiment notebook,"Plugins
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Max Limit of Samples
+Permutations
+ALLOW UP TO 96 SAMPLES"
+Process Manager Pro,Other,Contains the various tags to manage Process Manager Pro.,"Plugins
+EXCLUDE FROM PROCESS MANAGER
+Adding this tag to the key of a template's options will exclude it from being included in the available templates.
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Exclude from Process Manager
+Adding this tag to the key of a template's options will exclude it from being included in the available templates.
+Permutations
+EXCLUDE FROM PROCESS MANAGER"
+Process Queue,Work Queue,Contains experiment and entry tags to control the process queue view and start workflow button.,"Plugins
+Template/Notebook Experiment Tags:
+Show a process/workflow in the process queue even if it is empty:
+Key: ALWAYS SHOW IN PROCESS QUEUE
+Value: <empty>
+Show link columns in the process queue to view the queued record:
+Key: PROCESS QUEUE SHOW LINK COLUMN
+Value: <empty>
+Experiment Entry Tags:
+Prevent a entry that is populated on start of a workflow from the process queue from being submitted:
+Key: DISABLE AUTOMATIC ENTRY LOCKING BY QUEUE
+Value: <empty>
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Show Link Column
+Show link columns in the process queue to view the queued record.
+Permutations
+PROCESS QUEUE SHOW LINK COLUMN
+Notebook Key: Always Show
+Show a process/workflow in the process queue even if it is empty.
+Permutations
+ALWAYS SHOW IN PROCESS QUEUE
+Notebook Key: Use Ancestor Experiment Location
+If added to an experiment template, any experiments created from the process queue will attempt to use an ancestor study or project (whichever is found first) by default instead of prompting the user for an experiment location. Additional, if a data type (or data types) is (are) added to the tag's value (comma separated), only those experiment locations will be used during the looking. Using the first one found based on the list.
+Example:
+PROCESS QUEUE USE ANCESTOR EXPERIMENT LOCATION ::: Project,VeloxLocation
+Permutations
+PROCESS QUEUE USE ANCESTOR EXPERIMENT LOCATION
+E-Notebook Entry Options
+The following is a list of E-Notebook Entry option keys.
+Notebook Entry Key: Disable Entry Locking
+Applicable Entry Types: Form,Table
+Prevent a entry that is populated on start of a workflow from the process queue from being submitted.
+Permutations
+DISABLE AUTOMATIC ENTRY LOCKING BY QUEUE"
+Process Tracking Ignore,ELN Template,This tag will stop Process Tracking from running when a notebook completes.,"Plugins
+ProcessTrackingNotebookStatusDelegate [ENotebook: Status Change] (LATE)
+This tag will be used in a check to determine if process tracking should run. If the tag is present, when a notebook experiment is completed, process tracking code will not run.
+The intent of this tag was to allow an overriding of the default process tracking for a specific notebook.
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Process Tracking Ignore
+This tag allows for the default process tracking, that runs at the completion of a workflow, to be overwritten.
+Permutations
+PROCESS TRACKING IGNORE"
+Redirect User on Experiment Status Change,Experiments and Protocols,Redirects the user elsewhere when the experiment's status changes,"Plugins
+Sends the user to another location when the status is changed for an experiment. Multiple tags may be added to cover multiple scenarios.
+Note: This tag runs on certain experiment buttons (it's not possible to run on status change invocation).
+Usage: SEND <ELN ROLE> TO <LOCATION> ON <STATUS>
+e.g. SEND USER TO HOMEPAGE ON COMPLETION
+Valid ELN ROLEs:
+- USER (Ignores role and applies to all users)
+- OWNER
+- AUTHOR
+- WITNESS
+- REVIEWER
+- APPROVER
+Valid LOCATIONs:
+- HOMEPAGE
+- WORKQUEUE
+- PROCESSQUEUE
+- NEXTNOTEBOOK
+Valid STATUSes:
+- COMPLETION (If status is ""Completed"" or ""Completed - Approved"")
+- CANCEL (If status is ""Locked - Rejected By Approver"")
+- LOCK (If status is ""Locked - Awaiting Approval"", or any of the COMPLETION or CANCEL statuses)
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: SEND ROLE TO PLACE ON STATUS
+Permutations
+SEND USER TO HOMEPAGE ON COMPLETION
+SEND OWNER TO PROCESSQUEUE ON CANCEL
+SEND AUTHOR TO HOMEPAGE ON LOCK
+SEND WITNESS TO WORKQUEUE ON COMPLETION
+SEND REVIEWER TO HOMEPAGE ON CANCEL
+SEND APPROVER TO WORKQUEUE ON LOCK"
+Restrict Template,ELN Template,Restricts that a notebook created under a template can only go under a specific project and/or study.,"Plugins
+RestrictTemplateToProject [ENotebook: Status Change] (FIRST)
+Restricts the template so that any experiments created with it can only be set under the project/study that matches the ProjectId/StudyId given in the tag value. 
+E-Notebook Options
+The following is a list of E-Notebook option keys.
+Notebook Key: Restrict This Template To Project
+RESTRICT_THIS_TEMPLATE_TO_PROJECT:::ProjectId
+Disallows the use of this template from being added under any other project, or from studies that are not descendants of the given project.
+Permutations
+RESTRICT THIS TEMPLATE TO PROJECT
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: ProjectId
+Permutations
+REPLACE THIS VALUE WITH PROJECT ID
+Notebook Key: Restrict This Template To Study
+RESTRICT_THIS_TEMPLATE_TO_STUDY:::StudyId
+Prevents this template from being set under any study other than the one matching the given StudyId.
+Permutations
+RESTRICT THIS TEMPLATE TO STUDY
+Tag Values
+The following is a list of tag values for the task options.
+Tag Value: StudyId
+Permutations
+REPLACE THIS VALUE WITH STUDY ID"
