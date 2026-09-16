@@ -146,13 +146,13 @@ def test_origin_allowlist_on_threads(client) -> None:
         json=payload,
         headers={"Origin": "http://localhost:3000"},
     )
-    assert ok_3000.status_code == 200
+    assert ok_3000.status_code == 201
     ok_8080 = client.post(
         "/api/threads",
         json=payload,
         headers={"Origin": "http://localhost:8080"},
     )
-    assert ok_8080.status_code == 200
+    assert ok_8080.status_code == 201
     evil = client.post(
         "/api/threads",
         json=payload,
