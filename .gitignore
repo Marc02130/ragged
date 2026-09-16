@@ -73,7 +73,7 @@ tmp/
 temp/
 
 # User uploads and storage
-uploads/
+/uploads/
 storage/
 public/uploads/
 public/storage/
@@ -90,6 +90,8 @@ public/storage/
 *.doc
 *.txt
 *.rtf
+!api/requirements.txt
+!api/requirements-dev.txt
 
 # Cache directories
 .cache/
@@ -158,3 +160,13 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Conversion stack
+data/uploads/**
+!data/uploads/
+!data/uploads/.gitkeep
+api/.venv/
+web/node_modules/
+web/dist/
+.pytest_cache/
+__pycache__/
