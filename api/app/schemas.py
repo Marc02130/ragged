@@ -35,3 +35,20 @@ class ThreadOut(BaseModel):
     last_activity_at: datetime
     created_at: datetime
     updated_at: datetime
+
+
+class DocumentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    thread_id: UUID
+    file_name: str
+    file_size: int
+    file_type: str
+    title: str
+    status: str
+    embedding_model: str | None
+    chunk_count: int
+    error_message: str | None
+    created_at: datetime
+    updated_at: datetime

@@ -5,6 +5,7 @@ from app import db
 from app.config import settings
 from app.origin import OriginAllowlistMiddleware
 from app.routers.auth import router as auth_router
+from app.routers.documents import router as documents_router
 from app.routers.threads import router as threads_router
 
 app = FastAPI(title="RAGged")
@@ -24,6 +25,7 @@ if settings.cors_origin_list:
 api = APIRouter(prefix="/api")
 api.include_router(auth_router)
 api.include_router(threads_router)
+api.include_router(documents_router)
 
 
 @api.get("/health")

@@ -92,6 +92,8 @@ public/storage/
 *.rtf
 !api/requirements.txt
 !api/requirements-dev.txt
+!api/tests/fixtures/
+!api/tests/fixtures/*.pdf
 
 # Cache directories
 .cache/
