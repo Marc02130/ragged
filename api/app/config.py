@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +37,26 @@ class Settings(BaseSettings):
     BCRYPT_ROUNDS: int = 12
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 5
+
+    @model_validator(mode="after")
+    def reject_wildcard_origins(self) -> "Settings":
+        public = [o.strip() for o in self.PUBLIC_ORIGINS.split(",") if o.strip()]
+        if not public or "*" in public:
+            raise ValueError("PUBLIC_ORIGINS must be a non-empty allowlist without *")
+        cors = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        if "*" in cors:
+            raise ValueError("CORS_ORIGINS must not contain *")
+        if len(self.JWT_SECRET) < 32:
+            raise ValueError("JWT_SECRET must be at least 32 characters")
+        return self
+
+    @property
+    def public_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.PUBLIC_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
 
 settings = Settings()
