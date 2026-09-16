@@ -1,5 +1,7 @@
 # Container conversion tests
 
+Run results: see `tests/results/`.
+
 Three layers, ten slices. Default `pytest` runs **unit** only.
 
 The legacy Vitest suite (`tests/unit/*.ts`, `tests/integration`, `tests/e2e`) is documented in `tests/README.md` and is not this tree. It goes away in slice 10.
