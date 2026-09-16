@@ -1,3 +1,11 @@
+"""Session-scoped pgvector Testcontainers harness.
+
+Repo-root `pytest` loads `tests/conftest.py` (same fixture) so this directory
+is not on testpaths. Keep this file: `cd api && pytest` uses it.
+"""
+
+from __future__ import annotations
+
 import os
 import shutil
 import sys
@@ -9,35 +17,9 @@ from alembic import command
 from alembic.config import Config
 from testcontainers.postgres import PostgresContainer
 
-from tests import compose_support
-
-ROOT = Path(__file__).resolve().parents[1]
-API_ROOT = ROOT / "api"
+API_ROOT = Path(__file__).resolve().parents[1]
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://ragged:changeme@127.0.0.1:5432/ragged",
-)
-os.environ.setdefault("JWT_SECRET", "dev-secret-dev-secret-dev-secret-xx")
-os.environ.setdefault("OPENAI_API_KEY", "sk-test-not-used-in-slice-2")
-
-
-def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "unit: fast tests with no Docker")
-    config.addinivalue_line("markers", "uat: user-acceptance against the Compose stack")
-    config.addinivalue_line("markers", "dogfood: live operator walkthrough of the running stack")
-
-
-@pytest.fixture(scope="session")
-def compose_stack():
-    if not compose_support.docker_available():
-        pytest.skip("docker is not available")
-    url = compose_support.up()
-    yield url
-    if not compose_support.keep_compose():
-        compose_support.down()
 
 
 def _psycopg_url(url: str) -> str:
@@ -50,7 +32,7 @@ def _psycopg_url(url: str) -> str:
     return url
 
 
-def _alembic_upgrade(url: str) -> None:
+def _upgrade(url: str) -> None:
     cfg = Config(str(API_ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(API_ROOT / "alembic"))
     cfg.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
@@ -59,18 +41,17 @@ def _alembic_upgrade(url: str) -> None:
 
 @pytest.fixture(scope="session")
 def postgres_url() -> Iterator[str]:
-    """pgvector via Testcontainers (or compose db if RAG_USE_COMPOSE_DB=1)."""
     if not shutil.which("docker"):
         pytest.skip("docker is not available")
 
     if os.environ.get("RAG_USE_COMPOSE_DB") == "1" and os.environ.get("DATABASE_URL"):
         url = _psycopg_url(os.environ["DATABASE_URL"])
-        _alembic_upgrade(url)
+        _upgrade(url)
         yield url
         return
 
     with PostgresContainer("pgvector/pgvector:pg16") as postgres:
         url = _psycopg_url(postgres.get_connection_url())
         os.environ["DATABASE_URL"] = url
-        _alembic_upgrade(url)
+        _upgrade(url)
         yield url

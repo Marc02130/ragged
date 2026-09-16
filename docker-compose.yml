@@ -39,8 +39,7 @@ services:
       timeout: 3s
       retries: 12
       start_period: 20s
-    # Slice 2 prepends `alembic upgrade head &&`.
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
     restart: unless-stopped
 
   web:

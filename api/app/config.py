@@ -1,0 +1,41 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(extra="ignore")
+
+    DATABASE_URL: str
+    JWT_SECRET: str = "dev-only-change-me-32-bytes-min!!"
+    JWT_TTL_SECONDS: int = 604800
+    COOKIE_NAME: str = "ragged_session"
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_PATH: str = "/"
+    PUBLIC_ORIGINS: str = "http://localhost:8080,http://localhost:3000"
+    CORS_ORIGINS: str = ""
+    OPENAI_API_KEY: str = "sk-not-set"
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
+    OPENAI_TEMPERATURE: float = 0.2
+    OPENAI_MAX_TOKENS: int = 1000
+    OPENAI_TIMEOUT_SECONDS: int = 60
+    EMBEDDING_DIM: int = 1536
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
+    MAX_CHUNKS_PER_DOCUMENT: int = 1000
+    MAX_CONTENT_CHARS: int = 1_000_000
+    MAX_QUERY_CHARS: int = 8000
+    SIMILARITY_THRESHOLD: float = 0.7
+    MAX_VECTOR_RESULTS: int = 8
+    MAX_FILE_SIZE: int = 10_485_760
+    MAX_FILES_PER_THREAD: int = 20
+    MAX_TOTAL_SIZE_PER_THREAD: int = 52_428_800
+    MAX_TOTAL_SIZE_PER_USER: int = 1_073_741_824
+    MAX_UPLOAD_BODY_BYTES: int = 57_671_680
+    UPLOAD_ROOT: str = "/data/uploads"
+    BCRYPT_ROUNDS: int = 12
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 5
+
+
+settings = Settings()
