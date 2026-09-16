@@ -14,30 +14,32 @@ pytestmark = [
 def test_vector_extension_and_users_fk(compose_stack: str) -> None:
     from tests import compose_support
 
-    result = compose_support.compose(
-        "exec",
-        "-T",
-        "db",
-        "psql",
-        "-U",
-        "ragged",
-        "-d",
-        "ragged",
-        "-c",
-        r"\dx",
+    dx = compose_support.psql(r"\dx")
+    assert "vector" in dx
+
+    chunks = compose_support.psql(r"\d vector_chunks")
+    assert "1536" in chunks
+    assert "document_id" in chunks
+    assert "auth.users" not in chunks
+
+    documents = compose_support.psql(r"\d documents")
+    assert "user_id" in documents
+    assert "users" in documents
+    assert "auth.users" not in documents
+
+    users = compose_support.psql(r"\d users")
+    assert "email" in users
+
+    check = compose_support.psql(
+        "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+        "WHERE conrelid = 'users'::regclass AND contype = 'c';"
     )
-    assert "vector" in result.stdout
-    describe = compose_support.compose(
-        "exec",
-        "-T",
-        "db",
-        "psql",
-        "-U",
-        "ragged",
-        "-d",
-        "ragged",
-        "-c",
-        r"\d vector_chunks",
-    )
-    assert "1536" in describe.stdout
-    assert "auth.users" not in describe.stdout
+    assert "email = lower(email)" in check
+
+
+def test_ready_selects_one(compose_stack: str) -> None:
+    import httpx
+
+    response = httpx.get(f"{compose_stack}/api/ready", timeout=5.0)
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
