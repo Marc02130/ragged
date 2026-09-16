@@ -2,8 +2,8 @@
 
 - **Branch:** feat/slice-05-documents
 - **Date:** 2026-09-16 (America/New_York)
-- **Gate:** PASS (UAT portion; dogfood pending)
-- **Authority:** Ragged QA on Marc’s Mac checkout `/Users/marcbreneiser/Code/ragged/` (authoritative). Box clone earlier had one env-only `:8000` fail under host-network; Mac default compose is clean.
+- **Gate:** PASS
+- **Authority:** UAT by Ragged QA on Marc’s Mac; dogfood by Ragged Dogfood on `feat/slice-05-documents`.
 
 ## Commands
 
@@ -24,13 +24,15 @@ pytest -m dogfood
 
 ## Dogfood
 
-- Pending (Ragged Dogfood)
+- Result: **5 passed** (01–05), 5 skipped, ~18s
+- Operator: register → create thread → multipart upload `sample.pdf` → **201**, `status: ready`, `chunk_count >= 1`, list returns the doc and omits `content`
 
 ## UX notes (severity)
 
-- Documents ingest is API-only until shell (slice 08) — **Low / expected**
-- Nothing blocking for slice 05 UAT
+- Still API-only (no upload UI until shell) — **Low / expected**
+- Multi-step auth → thread → multipart is fine for this slice; ready + chunks feedback is clear
+- Nothing blocking
 
 ## Open bugs
 
-None for slice 05 product behavior (UAT).
+None for slice 05.
