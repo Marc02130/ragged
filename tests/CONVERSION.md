@@ -12,10 +12,22 @@ The legacy Vitest suite (`tests/unit/*.ts`, `tests/integration`, `tests/e2e`) is
 | **UAT** | `pytest -m uat` | Acceptance against `docker compose up`. Ports, proxies, body limits, later API contracts. |
 | **Dogfood** | `pytest -m dogfood` | Operator walkthrough of the live stack the way a human uses it. |
 
-Install:
+Install into a venv (Homebrew Python is PEP 668 managed; do not pip-install system-wide):
 
 ```bash
-python -m pip install -r api/requirements-dev.txt
+python3 -m venv api/.venv
+source api/.venv/bin/activate
+pip install -r api/requirements-dev.txt
+pytest                 # unit
+pytest -m uat          # needs Docker
+pytest -m dogfood      # needs Docker
+```
+
+Without activating:
+
+```bash
+api/.venv/bin/pip install -r api/requirements-dev.txt
+api/.venv/bin/pytest
 ```
 
 UAT and dogfood need Docker. They copy `.env.example` → `.env` if missing, then `docker compose up --build -d`. Set `RAG_KEEP_COMPOSE=1` to leave the stack running.
