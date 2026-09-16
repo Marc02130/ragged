@@ -50,7 +50,7 @@ def test_origin_allowlist_default_env(compose_stack: str) -> None:
                 json=payload,
                 headers={"Origin": "http://localhost:3000"},
             ).status_code
-            == 200
+            == 201
         )
         assert (
             client.post(
@@ -58,7 +58,7 @@ def test_origin_allowlist_default_env(compose_stack: str) -> None:
                 json=payload,
                 headers={"Origin": "http://localhost:8080"},
             ).status_code
-            == 200
+            == 201
         )
         assert (
             client.post(
