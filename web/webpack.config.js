@@ -46,7 +46,7 @@ module.exports = (_env, argv) => {
     devServer: {
       port: 3000,
       historyApiFallback: true,
-      proxy: [{ context: ['/api'], target: 'http://localhost:8000' }],
+      proxy: [{ context: ['/api'], target: 'http://localhost:8001' }],
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };
