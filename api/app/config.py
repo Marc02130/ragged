@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     MAX_CHUNKS_PER_DOCUMENT: int = 1000
     MAX_CONTENT_CHARS: int = 1_000_000
     MAX_QUERY_CHARS: int = 8000
-    SIMILARITY_THRESHOLD: float = 0.7
+    SIMILARITY_THRESHOLD: float = 0.4
     MAX_VECTOR_RESULTS: int = 8
     MAX_FILE_SIZE: int = 10_485_760
     MAX_FILES_PER_THREAD: int = 20

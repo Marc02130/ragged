@@ -33,7 +33,7 @@ def test_operator_asks_in_and_out_of_corpus(compose_stack: str) -> None:
         assert uploaded.status_code == 201
         asked = client.post(
             f"/api/threads/{filled}/messages",
-            json={"content": "what does the document say?"},
+            json={"content": "hello ragged"},
         )
         assert asked.status_code == 200
         assert asked.json()["assistant_message"]["content"] != CANNED

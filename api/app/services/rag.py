@@ -58,7 +58,7 @@ def search_chunks(
         WHERE vc.user_id = :user_id
           AND vc.thread_id = :thread_id
           AND vc.embedding_model = :model
-          AND 1 - (vc.embedding <=> CAST(:qvec AS vector)) >= 0.7
+          AND 1 - (vc.embedding <=> CAST(:qvec AS vector)) >= :threshold
         ORDER BY vc.embedding <=> CAST(:qvec AS vector)
         LIMIT :k
         """
@@ -70,6 +70,7 @@ def search_chunks(
             "user_id": user_id,
             "thread_id": thread_id,
             "model": settings.EMBEDDING_MODEL,
+            "threshold": settings.SIMILARITY_THRESHOLD,
             "k": settings.MAX_VECTOR_RESULTS,
         },
     ).mappings()

@@ -80,7 +80,10 @@ def test_messages_router_forbids_client_model_and_cross_thread() -> None:
     rag = (ROOT / "api" / "app" / "services" / "rag.py").read_text()
     prompts = (ROOT / "api" / "app" / "prompts.py").read_text()
     combined = text + rag + prompts
-    assert "0.7" in combined
+    assert ":threshold" in rag
+    from app.config import settings as app_settings
+
+    assert app_settings.SIMILARITY_THRESHOLD == 0.4
     assert "I don't have that in your documents." in combined
 
 
@@ -188,7 +191,7 @@ def test_extra_fields_and_length_rejected(client) -> None:
     )
 
 
-def test_cosine_069_refused_071_hits(client, monkeypatch) -> None:
+def test_cosine_below_threshold_refused_above_hits(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
@@ -202,7 +205,7 @@ def test_cosine_069_refused_071_hits(client, monkeypatch) -> None:
     monkeypatch.setattr(rag_service, "complete", fake_complete)
 
     user, low_thread = _register_and_thread(client)
-    _seed_chunk(user["id"], low_thread, _unit_vec(0.69))
+    _seed_chunk(user["id"], low_thread, _unit_vec(0.39))
     low = client.post(
         f"/api/threads/{low_thread}/messages", json={"content": "query"}
     )
@@ -210,7 +213,7 @@ def test_cosine_069_refused_071_hits(client, monkeypatch) -> None:
     assert chat_calls == []
 
     high_user, high_thread = _register_and_thread(client)
-    _seed_chunk(high_user["id"], high_thread, _unit_vec(0.71), content="needle")
+    _seed_chunk(high_user["id"], high_thread, _unit_vec(0.41), content="needle")
     high = client.post(
         f"/api/threads/{high_thread}/messages", json={"content": "query"}
     )

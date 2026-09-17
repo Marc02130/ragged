@@ -20,7 +20,7 @@ def test_operator_uses_the_spa(compose_stack: str) -> None:
     assert home.status_code == 200
     js_names = re.findall(r"/assets/[\w.-]+\.js", home.text)
     bundle = httpx.get(f"{compose_stack}{js_names[0]}", timeout=10.0).text
-    assert "Upload Documents" in bundle
+    assert "Uploaded documents" in bundle
     assert "Ask a question about your documents" in bundle
 
     email = f"dogfood-shell-{uuid.uuid4().hex[:8]}@example.com"

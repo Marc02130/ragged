@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from './lib/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/UI/ErrorBoundary';
@@ -18,6 +19,17 @@ const Shell: React.FC = () => {
   const [showCreateThread, setShowCreateThread] = useState(false);
   const [currentThread, setCurrentThread] = useState<Thread | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+
+  useEffect(() => {
+    if (!currentThread) {
+      setDocuments([]);
+      return;
+    }
+    void api.documents
+      .list(currentThread.id)
+      .then((rows) => setDocuments(rows as Document[]))
+      .catch(() => setDocuments([]));
+  }, [currentThread?.id]);
 
   if (loading) {
     return (
@@ -56,17 +68,32 @@ const Shell: React.FC = () => {
         <div className="flex-1 flex flex-col">
           {currentThread ? (
             <>
-              <div className="p-6 border-b border-gray-200">
-                <DocumentUpload
-                  threadId={currentThread.id}
-                  onUploadComplete={(docs) => setDocuments((prev) => [...docs, ...prev])}
-                />
-                {documents.length > 0 && (
-                  <p className="mt-2 text-sm text-gray-500">{documents.length} document(s) in this session</p>
-                )}
-              </div>
               <div className="flex-1 min-h-0">
                 <ChatInterface threadId={currentThread.id} threadTitle={currentThread.title} />
+              </div>
+              <div className="border-t border-gray-200 bg-white p-4 max-h-56 overflow-y-auto">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Uploaded documents</h3>
+                {documents.length === 0 ? (
+                  <p className="text-sm text-gray-500 mb-3">None yet</p>
+                ) : (
+                  <ul className="mb-3 space-y-1">
+                    {documents.map((doc) => (
+                      <li key={doc.id} className="text-sm text-gray-700 flex justify-between gap-2">
+                        <span className="truncate">{doc.file_name}</span>
+                        <span className="shrink-0 text-xs text-gray-500">{doc.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <DocumentUpload
+                  threadId={currentThread.id}
+                  onUploadComplete={(docs) =>
+                    setDocuments((prev) => {
+                      const ids = new Set(prev.map((item) => item.id));
+                      return [...prev, ...docs.filter((item) => !ids.has(item.id))];
+                    })
+                  }
+                />
               </div>
             </>
           ) : (
