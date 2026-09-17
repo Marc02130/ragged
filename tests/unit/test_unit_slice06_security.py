@@ -32,10 +32,10 @@ def test_prompt_treats_chunk_text_as_untrusted(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
-    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts: [QUERY_VEC])
+    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts, **_k: [QUERY_VEC])
     captured: list[str] = []
 
-    def fake_complete(prompt: str) -> str:
+    def fake_complete(prompt: str, *_args, **_kwargs) -> str:
         captured.append(prompt)
         return "ok"
 

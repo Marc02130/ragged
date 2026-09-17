@@ -15,8 +15,15 @@ class Settings(BaseSettings):
     PUBLIC_ORIGINS: str = "http://localhost:8080,http://localhost:3000"
     CORS_ORIGINS: str = ""
     OPENAI_API_KEY: str = "sk-not-set"
+    XAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
+    XAI_CHAT_MODEL: str = "grok-4.5"
+    XAI_BASE_URL: str = "https://api.x.ai/v1"
+    ANTHROPIC_CHAT_MODEL: str = "claude-sonnet-4-5"
+    ANTHROPIC_API_URL: str = "https://api.anthropic.com/v1/messages"
+    ANTHROPIC_VERSION: str = "2023-06-01"
     OPENAI_TEMPERATURE: float = 0.2
     OPENAI_MAX_TOKENS: int = 1000
     OPENAI_TIMEOUT_SECONDS: int = 60

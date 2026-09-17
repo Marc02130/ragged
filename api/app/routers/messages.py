@@ -50,9 +50,7 @@ def create_message(
     thread: Thread = Depends(get_owned_thread),
     session: Session = Depends(get_db),
 ) -> CreateMessageResponse:
-    user_row, assistant_row = rag_service.answer(
-        session, user.id, thread.id, body.content
-    )
+    user_row, assistant_row = rag_service.answer(session, user, thread.id, body.content)
     return CreateMessageResponse(
         user_message=to_message_out(user_row),
         assistant_message=to_message_out(assistant_row),

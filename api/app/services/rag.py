@@ -9,9 +9,12 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from datetime import datetime, timezone
 
-from app.models import Conversation, Thread
+from fastapi import HTTPException
+from app.models import Conversation, Thread, User
 from app.prompts import CANNED_REFUSAL, build_prompt
+from app.services import chat as chat_service
 from app.services import embeddings as embeddings_service
+from app.services import llm_keys
 
 
 @dataclass
@@ -83,23 +86,23 @@ def search_chunks(
     ]
 
 
-def complete(prompt: str) -> str:
-    if embeddings_service.uses_stub_embeddings():
+def complete(prompt: str, user: User, session: Session) -> str:
+    llm = llm_keys.get_or_create_settings(session, user)
+    if embeddings_service.uses_stub_embeddings(user, session) and llm_keys.resolve_key(
+        llm, llm.chat_provider
+    ) is None:
         return "Answer based on SOURCES."
-    client = embeddings_service.get_client()
-    response = client.chat.completions.create(
-        model=settings.OPENAI_CHAT_MODEL,
-        temperature=settings.OPENAI_TEMPERATURE,
-        max_tokens=settings.OPENAI_MAX_TOKENS,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.choices[0].message.content or ""
+    try:
+        return chat_service.complete(prompt, user, llm)
+    except PermissionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def answer(
-    session: Session, user_id: UUID, thread_id: UUID, question: str
+    session: Session, user: User, thread_id: UUID, question: str
 ) -> tuple[Conversation, Conversation]:
-    query_vec = embeddings_service.embed_texts([question])[0]
+    user_id = user.id
+    query_vec = embeddings_service.embed_texts([question], user=user, session=session)[0]
     hits = search_chunks(session, user_id, thread_id, query_vec)
     user_row = Conversation(
         thread_id=thread_id,
@@ -126,7 +129,7 @@ def answer(
 
     sources = [hit.as_source() for hit in hits]
     prompt = build_prompt(question, sources)
-    content = complete(prompt)
+    content = complete(prompt, user, session)
     assistant_row = Conversation(
         thread_id=thread_id,
         user_id=user_id,

@@ -7,6 +7,7 @@ from app.origin import OriginAllowlistMiddleware
 from app.routers.auth import router as auth_router
 from app.routers.documents import router as documents_router
 from app.routers.messages import router as messages_router
+from app.routers.settings import router as settings_router
 from app.routers.threads import router as threads_router
 
 app = FastAPI(title="RAGged")
@@ -28,6 +29,7 @@ api.include_router(auth_router)
 api.include_router(threads_router)
 api.include_router(documents_router)
 api.include_router(messages_router)
+api.include_router(settings_router)
 
 
 @api.get("/health")

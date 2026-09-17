@@ -81,4 +81,22 @@ export const api = {
     create: (threadId: string, content: string) =>
       post<CreateMessageResponse>(`/threads/${threadId}/messages`, { content }),
   },
+  settings: {
+    llm: () =>
+      get<{
+        openai: { configured: boolean };
+        xai: { configured: boolean };
+        anthropic: { configured: boolean };
+        chat_provider: 'openai' | 'xai' | 'anthropic';
+        chat_models: Record<string, string>;
+      }>('/settings/llm'),
+    updateLlm: (body: Record<string, string>) =>
+      request<{
+        openai: { configured: boolean };
+        xai: { configured: boolean };
+        anthropic: { configured: boolean };
+        chat_provider: 'openai' | 'xai' | 'anthropic';
+        chat_models: Record<string, string>;
+      }>('/settings/llm', { method: 'PUT', body: JSON.stringify(body) }),
+  },
 };

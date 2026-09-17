@@ -35,6 +35,34 @@ class User(Base):
     threads: Mapped[list["Thread"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    llm_settings: Mapped["UserLlmSettings | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class UserLlmSettings(Base):
+    __tablename__ = "user_llm_settings"
+    __table_args__ = (
+        CheckConstraint(
+            "chat_provider IN ('openai', 'xai', 'anthropic')",
+            name="user_llm_settings_chat_provider_check",
+        ),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    openai_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    xai_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anthropic_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    chat_provider: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'openai'")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+    user: Mapped[User] = relationship(back_populates="llm_settings")
 
 
 class Thread(Base):
