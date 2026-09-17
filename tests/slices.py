@@ -25,7 +25,8 @@ def slice_ready(n: int) -> bool:
         5: DOCUMENTS_ROUTER.exists(),
         6: MESSAGES_ROUTER.exists(),
         7: WEBPACK.exists() and WEB_PACKAGE.exists(),
-        8: WEB_APP.exists(),
+        8: WEB_APP.exists()
+        and (WEB_APP.parent / "components" / "Chat" / "ChatInterface.tsx").exists(),
         9: SMOKE.exists(),
         10: not VITE_CONFIG.exists(),
     }

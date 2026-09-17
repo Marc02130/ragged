@@ -1,6 +1,7 @@
-# Overlay for host webpack-dev-server (browser :3000 → proxy → api:8000).
+# Overlay for host webpack-dev-server (browser :3000 → proxy → api:8001).
+# NimbleLIMS already owns host :8000, so ragged API is published on :8001.
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 services:
   api:
     ports:
-      - "8000:8000"
+      - "8001:8000"
