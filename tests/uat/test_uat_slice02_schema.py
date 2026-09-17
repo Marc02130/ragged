@@ -18,7 +18,7 @@ def test_vector_extension_and_users_fk(compose_stack: str) -> None:
     assert "vector" in dx
 
     chunks = compose_support.psql(r"\d vector_chunks")
-    assert "1536" in chunks
+    assert "384" in chunks
     assert "document_id" in chunks
     assert "auth.users" not in chunks
 

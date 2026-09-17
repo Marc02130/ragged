@@ -69,7 +69,7 @@ def search_chunks(
             "qvec": _vector_literal(query_vec),
             "user_id": user_id,
             "thread_id": thread_id,
-            "model": settings.OPENAI_EMBEDDING_MODEL,
+            "model": settings.EMBEDDING_MODEL,
             "k": settings.MAX_VECTOR_RESULTS,
         },
     ).mappings()
@@ -88,9 +88,7 @@ def search_chunks(
 
 def complete(prompt: str, user: User, session: Session) -> str:
     llm = llm_keys.get_or_create_settings(session, user)
-    if embeddings_service.uses_stub_embeddings(user, session) and llm_keys.resolve_key(
-        llm, llm.chat_provider
-    ) is None:
+    if llm_keys.resolve_key(llm, llm.chat_provider) is None:
         return "Answer based on SOURCES."
     try:
         return chat_service.complete(prompt, user, llm)

@@ -17,7 +17,7 @@ pytestmark = [
 ]
 
 CANNED = "I don't have that in your documents."
-DIM = 1536
+DIM = 384
 
 
 def _email() -> str:
@@ -56,7 +56,7 @@ def _seed_chunk(user_id: str, thread_id: str, embedding: list[float], content: s
             file_type="text/plain",
             title="notes.txt",
             status="ready",
-            embedding_model="text-embedding-3-small",
+            embedding_model="sentence-transformers/all-MiniLM-L6-v2",
             chunk_count=1,
         )
         session.add(doc)
@@ -68,7 +68,7 @@ def _seed_chunk(user_id: str, thread_id: str, embedding: list[float], content: s
                 user_id=uuid.UUID(user_id),
                 content=content,
                 embedding=embedding,
-                embedding_model="text-embedding-3-small",
+                embedding_model="sentence-transformers/all-MiniLM-L6-v2",
                 chunk_index=0,
             )
         )

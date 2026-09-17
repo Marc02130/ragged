@@ -24,7 +24,7 @@ def test_operator_can_describe_tables(compose_stack: str) -> None:
 
     chunks = compose_support.psql(r"\d vector_chunks")
     assert "embedding" in chunks
-    assert "1536" in chunks
+    assert "384" in chunks
 
     tables = compose_support.psql(
         "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY 1;"

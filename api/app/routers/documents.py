@@ -221,14 +221,14 @@ def _ingest_one(
                 user_id=doc.user_id,
                 content=piece,
                 embedding=vector,
-                embedding_model=settings.OPENAI_EMBEDDING_MODEL,
+                embedding_model=settings.EMBEDDING_MODEL,
                 chunk_index=index,
             )
         )
     doc.content = text
     doc.status = "ready"
     doc.chunk_count = len(pieces)
-    doc.embedding_model = settings.OPENAI_EMBEDDING_MODEL
+    doc.embedding_model = settings.EMBEDDING_MODEL
     doc.error_message = None
     doc.updated_at = _now()
     session.commit()

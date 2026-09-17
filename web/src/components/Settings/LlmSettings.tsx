@@ -89,8 +89,8 @@ export const LlmSettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaved }) 
       <div className="relative top-16 mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
         <h3 className="text-lg font-medium text-gray-900 mb-2">AI providers</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Paste API keys (never shown again). Chat uses the selected provider. Uploads still embed with
-          OpenAI <code>text-embedding-3-small</code> because Anthropic has no embeddings API.
+          Paste API keys (never shown again). Chat uses the selected provider. Uploads embed on this
+          server with a local model (<code>all-MiniLM-L6-v2</code>), so ingest does not need a cloud key.
         </p>
         {error && <div className="mb-3 text-sm text-red-700">{error}</div>}
         {(['openai', 'xai', 'anthropic'] as const).map((name) => (

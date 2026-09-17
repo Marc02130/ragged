@@ -22,6 +22,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("JWT_SECRET", "dev-secret-dev-secret-dev-secret-xx")
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-not-used-in-slice-2")
+os.environ.setdefault("EMBEDDING_PROVIDER", "stub")
 
 
 def pytest_configure(config: pytest.Config) -> None:

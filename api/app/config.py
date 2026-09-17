@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = "sk-not-set"
     XAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
-    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
     XAI_CHAT_MODEL: str = "grok-4.5"
     XAI_BASE_URL: str = "https://api.x.ai/v1"
@@ -27,7 +26,9 @@ class Settings(BaseSettings):
     OPENAI_TEMPERATURE: float = 0.2
     OPENAI_MAX_TOKENS: int = 1000
     OPENAI_TIMEOUT_SECONDS: int = 60
-    EMBEDDING_DIM: int = 1536
+    EMBEDDING_PROVIDER: str = "local"
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_DIM: int = 384
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     MAX_CHUNKS_PER_DOCUMENT: int = 1000
