@@ -52,3 +52,32 @@ class DocumentOut(BaseModel):
     error_message: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class MessageCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, max_length=8000)
+
+
+class SourceOut(BaseModel):
+    chunk_id: UUID
+    document_id: UUID
+    file_name: str
+    content: str
+    similarity: float
+
+
+class MessageOut(BaseModel):
+    id: UUID
+    role: str
+    content: str
+    created_at: datetime
+    sources: list[SourceOut]
+
+
+class CreateMessageResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_message: MessageOut
+    assistant_message: MessageOut
