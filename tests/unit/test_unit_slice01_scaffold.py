@@ -67,10 +67,10 @@ def test_web_waits_for_api_healthy() -> None:
     assert depends["api"]["condition"] == "service_healthy"
 
 
-def test_dev_overlay_only_publishes_api_8000() -> None:
+def test_dev_overlay_only_publishes_api_8001() -> None:
     data = yaml.safe_load(COMPOSE_DEV.read_text())
     assert list(data["services"]) == ["api"]
-    assert data["services"]["api"] == {"ports": ["8000:8000"]}
+    assert data["services"]["api"] == {"ports": ["8001:8000"]}
 
 
 def test_nginx_body_timeout_and_forwarded_headers() -> None:

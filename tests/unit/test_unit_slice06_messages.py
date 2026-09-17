@@ -17,7 +17,7 @@ pytestmark = [
 ]
 
 CANNED = "I don't have that in your documents."
-DIM = 1536
+DIM = 384
 
 
 def _email() -> str:
@@ -56,7 +56,7 @@ def _seed_chunk(user_id: str, thread_id: str, embedding: list[float], content: s
             file_type="text/plain",
             title="notes.txt",
             status="ready",
-            embedding_model="text-embedding-3-small",
+            embedding_model="sentence-transformers/all-MiniLM-L6-v2",
             chunk_count=1,
         )
         session.add(doc)
@@ -68,7 +68,7 @@ def _seed_chunk(user_id: str, thread_id: str, embedding: list[float], content: s
                 user_id=uuid.UUID(user_id),
                 content=content,
                 embedding=embedding,
-                embedding_model="text-embedding-3-small",
+                embedding_model="sentence-transformers/all-MiniLM-L6-v2",
                 chunk_index=0,
             )
         )
@@ -88,10 +88,10 @@ def test_empty_retrieval_canned_refusal_skips_chat(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
-    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts: [QUERY_VEC])
+    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts, **_k: [QUERY_VEC])
     called = {"chat": 0}
 
-    def boom(_prompt: str) -> str:
+    def boom(_prompt: str, *_args, **_kwargs) -> str:
         called["chat"] += 1
         raise AssertionError("chat should not be called")
 
@@ -114,7 +114,7 @@ def test_two_posts_create_four_rows(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from sqlalchemy import func, select
 
-    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts: [QUERY_VEC])
+    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts, **_k: [QUERY_VEC])
     _, thread_id = _register_and_thread(client)
     client.post(f"/api/threads/{thread_id}/messages", json={"content": "one"})
     client.post(f"/api/threads/{thread_id}/messages", json={"content": "two"})
@@ -131,8 +131,8 @@ def test_get_messages_hydrates_sources(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
-    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts: [QUERY_VEC])
-    monkeypatch.setattr(rag_service, "complete", lambda prompt: "from sources")
+    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts, **_k: [QUERY_VEC])
+    monkeypatch.setattr(rag_service, "complete", lambda prompt, *_a, **_k: "from sources")
     user, thread_id = _register_and_thread(client)
     _seed_chunk(user["id"], thread_id, _unit_vec(0.71), content="the sky is teal")
     posted = client.post(
@@ -192,10 +192,10 @@ def test_cosine_069_refused_071_hits(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
-    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts: [QUERY_VEC])
+    monkeypatch.setattr(embeddings_service, "embed_texts", lambda texts, **_k: [QUERY_VEC])
     chat_calls: list[str] = []
 
-    def fake_complete(prompt: str) -> str:
+    def fake_complete(prompt: str, *_args, **_kwargs) -> str:
         chat_calls.append(prompt)
         return "hit"
 

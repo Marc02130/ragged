@@ -67,7 +67,7 @@ def test_pdf_upload_ready_and_path_regex(client) -> None:
     assert len(body) == 1
     assert body[0]["status"] == "ready"
     assert body[0]["chunk_count"] >= 1
-    assert body[0]["embedding_model"] == "text-embedding-3-small"
+    assert body[0]["embedding_model"] == "sentence-transformers/all-MiniLM-L6-v2"
     assert "content" not in body[0]
 
     with db.SessionLocal() as session:

@@ -174,7 +174,7 @@ def upload_documents(
             session.refresh(doc)
             created.append(doc)
             try:
-                _ingest_one(session, doc, data, kind)
+                _ingest_one(session, doc, data, kind, user)
             except Exception as exc:  # noqa: BLE001 — per-file failure
                 session.rollback()
                 doc = session.get(Document, doc.id)
@@ -193,7 +193,9 @@ def upload_documents(
     return [session.get(Document, doc.id) for doc in created]
 
 
-def _ingest_one(session: Session, doc: Document, data: bytes, kind: str) -> None:
+def _ingest_one(
+    session: Session, doc: Document, data: bytes, kind: str, user: User
+) -> None:
     text = extract_service.extract_text(data, kind)
     if not text.strip():
         _fail_document(session, doc, "empty extract")
@@ -210,7 +212,7 @@ def _ingest_one(session: Session, doc: Document, data: bytes, kind: str) -> None
         _fail_document(session, doc, "too many chunks")
         session.commit()
         return
-    vectors = embeddings_service.embed_texts(pieces)
+    vectors = embeddings_service.embed_texts(pieces, user=user, session=session)
     for index, (piece, vector) in enumerate(zip(pieces, vectors, strict=True)):
         session.add(
             VectorChunk(
@@ -219,14 +221,14 @@ def _ingest_one(session: Session, doc: Document, data: bytes, kind: str) -> None
                 user_id=doc.user_id,
                 content=piece,
                 embedding=vector,
-                embedding_model=settings.OPENAI_EMBEDDING_MODEL,
+                embedding_model=settings.EMBEDDING_MODEL,
                 chunk_index=index,
             )
         )
     doc.content = text
     doc.status = "ready"
     doc.chunk_count = len(pieces)
-    doc.embedding_model = settings.OPENAI_EMBEDDING_MODEL
+    doc.embedding_model = settings.EMBEDDING_MODEL
     doc.error_message = None
     doc.updated_at = _now()
     session.commit()

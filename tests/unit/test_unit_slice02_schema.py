@@ -55,7 +55,7 @@ def test_alembic_vector_chunks_and_fks(postgres_url: str) -> None:
                 """
             )
         ).scalar_one()
-        assert dim == "vector(1536)"
+        assert dim == "vector(384)"
         fks = conn.execute(
             text(
                 """
