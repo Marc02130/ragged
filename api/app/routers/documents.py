@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,7 @@ from app.deps import get_current_user, get_owned_thread
 from app.models import Document, Thread, User, VectorChunk
 from app.schemas import DocumentOut
 from app.services import chunk as chunk_service
+from app.services import classify
 from app.services import embeddings as embeddings_service
 from app.services import extract as extract_service
 from app.services import files as files_service
@@ -88,6 +89,26 @@ def get_document(
     if doc is None or doc.thread_id != thread.id or doc.user_id != thread.user_id:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+@router.delete("/threads/{thread_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    doc_id: UUID,
+    thread: Thread = Depends(get_owned_thread),
+    session: Session = Depends(get_db),
+) -> Response:
+    doc = session.get(Document, doc_id)
+    if doc is None or doc.thread_id != thread.id or doc.user_id != thread.user_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    relative = doc.file_path
+    session.delete(doc)
+    _refresh_document_count(session, thread)
+    session.commit()
+    try:
+        files_service.unlink_if_exists(relative)
+    except ValueError:
+        pass
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
@@ -205,15 +226,23 @@ def _ingest_one(
         _fail_document(session, doc, "extracted text too large")
         session.commit()
         return
-    pieces = chunk_service.split_text(
+    labeled = chunk_service.split_with_headings(
         text, chunk_size=settings.CHUNK_SIZE, overlap=settings.CHUNK_OVERLAP
     )
+    pieces = [piece for piece, _heading in labeled]
     if len(pieces) > settings.MAX_CHUNKS_PER_DOCUMENT:
         _fail_document(session, doc, "too many chunks")
         session.commit()
         return
-    vectors = embeddings_service.embed_texts(pieces, user=user, session=session)
-    for index, (piece, vector) in enumerate(zip(pieces, vectors, strict=True)):
+    to_embed = [
+        f"[{heading}] {piece}" if heading else piece for piece, heading in labeled
+    ]
+    vectors = embeddings_service.embed_texts(to_embed, user=user, session=session)
+    for index, ((piece, heading), vector) in enumerate(zip(labeled, vectors, strict=True)):
+        role = classify.classify_chunk(piece, heading)
+        meta: dict = {"role": role}
+        if heading:
+            meta["heading"] = heading
         session.add(
             VectorChunk(
                 document_id=doc.id,
@@ -223,6 +252,7 @@ def _ingest_one(
                 embedding=vector,
                 embedding_model=settings.EMBEDDING_MODEL,
                 chunk_index=index,
+                extra=meta,
             )
         )
     doc.content = text

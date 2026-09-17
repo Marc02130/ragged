@@ -76,6 +76,48 @@ def test_pdf_upload_ready_and_path_regex(client) -> None:
     assert PATH_RE.match(row.file_path)
 
 
+def test_delete_document_removes_row_chunks_and_file(client, tmp_path) -> None:
+    from app import db
+    from app.models import Document, VectorChunk
+    from sqlalchemy import select
+
+    _, thread_id = _register_and_thread(client)
+    uploaded = client.post(
+        f"/api/threads/{thread_id}/documents",
+        files=[("files", ("notes.pdf", SAMPLE_PDF.read_bytes(), "application/pdf"))],
+    )
+    doc_id = uploaded.json()[0]["id"]
+    with db.SessionLocal() as session:
+        row = session.scalar(select(Document).where(Document.id == uuid.UUID(doc_id)))
+        assert row is not None
+        disk = tmp_path / row.file_path
+        assert disk.is_file()
+
+    deleted = client.delete(f"/api/threads/{thread_id}/documents/{doc_id}")
+    assert deleted.status_code == 204
+    listed = client.get(f"/api/threads/{thread_id}/documents")
+    assert listed.json() == []
+    with db.SessionLocal() as session:
+        assert session.get(Document, uuid.UUID(doc_id)) is None
+        leftover = session.scalars(
+            select(VectorChunk).where(VectorChunk.document_id == uuid.UUID(doc_id))
+        ).all()
+        assert leftover == []
+    assert not disk.is_file()
+
+
+def test_delete_document_is_404_for_other_user(client) -> None:
+    _, thread_id = _register_and_thread(client)
+    uploaded = client.post(
+        f"/api/threads/{thread_id}/documents",
+        files=[("files", ("notes.pdf", SAMPLE_PDF.read_bytes(), "application/pdf"))],
+    )
+    doc_id = uploaded.json()[0]["id"]
+    client.post("/api/auth/logout")
+    _register_and_thread(client)
+    assert client.delete(f"/api/threads/{thread_id}/documents/{doc_id}").status_code == 404
+
+
 def test_exe_renamed_pdf_is_415_before_writes(client, tmp_path) -> None:
     from app import db
     from app.models import Document
