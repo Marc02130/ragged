@@ -1,37 +1,23 @@
-# Slice 08 — SPA shell — test results
+# Slice 08 — Shell — test results
 
-- **Branch:** feat/slice-07-webpack
+- **Branch:** feat/slice-07-webpack (App.tsx on this branch; no separate feat/slice-08-shell on remote)
 - **Date:** 2026-09-16 (America/New_York)
-- **Gate:** PASS (UAT portion; dogfood pending)
-- **Authority:** Ragged QA. Marc’s Mac is authoritative when available.
-- **Note:** Both webpack and `App.tsx` are on `feat/slice-07-webpack`. There is no separate `feat/slice-08-shell` on remote.
+- **Gate:** PASS
+- **Authority:** UAT by Ragged QA on Marc’s Mac; dogfood by Ragged Dogfood.
 
-## Commands
-
-```bash
-source api/.venv/bin/activate
-pytest -m uat
-pytest -m dogfood
-```
-
-## UAT (`tests/uat/test_uat_slice08_shell.py`)
-
-- Case: SPA shell loads
-  - GET `/` → **200**; hashed `/assets/*.js` present and **200**
-  - Bundle contains `Create New Thread`, `assistant_message`, and `exceeds 10MB limit`
-  - Bundle does **not** contain `saveMessage`
-- Overall Mac expected if the stack is clean: **14 passed / 2 skipped** (slices 09–10). Parent will confirm.
+## UAT
+- Overall: **14 passed**, 2 skipped, ~19s
+- Slice 08: SPA shell strings — Create New Thread, assistant_message, exceeds 10MB limit; no saveMessage
 
 ## Dogfood
-
-Pending.
+- Overall: **8 passed**, 2 skipped, ~15s
+- Live UI walk: login solid; viewport + hashed CSS/JS OK
 
 ## UX notes (severity)
-
-- Shell copy and 10MB upload limit are asserted from the hashed bundle, not a browser click-through — **Low / expected** until dogfood
-- Threads, upload, and chat UI ship with this branch; operator flow remains dogfood — **Low / expected**
-- Nothing blocking the UAT gate
+1. Sign-up fields placeholder-only vs login sr-only — **Low** (a11y inconsistency)
+2. Thread switch clears in-session doc list; no fetch of existing docs — **Low** (UX gap)
+3. Empty-state Create New Thread hover/focus thinner than auth buttons — **Low** (polish)
+Nothing blocking.
 
 ## Open bugs
-
-None for product.
+None blocking for slice 08.
