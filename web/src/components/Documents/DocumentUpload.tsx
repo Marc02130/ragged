@@ -60,7 +60,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ threadId, onUplo
     setProgress(files.map((file) => ({ file, progress: 0, status: 'uploading' as const })));
     try {
       const data = (await api.documents.upload(threadId, files)) as Document[];
-      setProgress(files.map((file) => ({ file, progress: 100, status: 'complete' as const })));
+      setProgress([]);
       onUploadComplete(data);
       showToast('success', `${data.length} document(s) uploaded successfully`);
       if (fileInputRef.current) {
@@ -94,10 +94,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ threadId, onUplo
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Documents</h3>
+    <div>
       <div
-        className="border-2 border-dashed rounded-lg p-6 text-center"
+        className="border-2 border-dashed rounded-lg p-3 text-center"
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
         data-testid="upload-dropzone"

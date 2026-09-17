@@ -56,14 +56,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ threadId, threadTi
     new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="flex flex-col h-full bg-gray-50 min-h-0">
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
         <h2 className="text-lg font-semibold text-gray-900">{threadTitle}</h2>
         <p className="text-sm text-gray-500">
           {messages.length > 0 ? `${messages.length} messages` : 'Start a conversation'}
         </p>
       </div>
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white border-b px-6 py-4 flex space-x-4">
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="Ask a question about your documents..."
+          disabled={loading}
+          className="flex-1 border rounded-lg px-4 py-2"
+        />
+        <button
+          type="submit"
+          disabled={!inputMessage.trim() || loading}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+        >
+          Send
+        </button>
+      </form>
+      {error && <div className="px-6 py-3 bg-red-50 text-sm text-red-700">{error}</div>}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -98,24 +116,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ threadId, threadTi
         )}
         <div ref={messagesEndRef} />
       </div>
-      {error && <div className="px-6 py-3 bg-red-50 text-sm text-red-700">{error}</div>}
-      <form onSubmit={handleSubmit} className="bg-white border-t px-6 py-4 flex space-x-4">
-        <input
-          type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Ask a question about your documents..."
-          disabled={loading}
-          className="flex-1 border rounded-lg px-4 py-2"
-        />
-        <button
-          type="submit"
-          disabled={!inputMessage.trim() || loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-        >
-          Send
-        </button>
-      </form>
     </div>
   );
 };
