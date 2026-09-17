@@ -1,8 +1,10 @@
-"""Slice 10 UAT: default compose has no Vite runtime."""
+"""Slice 10 UAT: Compose runtime has no Vite or Supabase app dependency."""
+
+import json
 
 import pytest
 
-from tests.paths import ROOT
+from tests.paths import COMPOSE, ROOT, WEB_PACKAGE
 from tests.slices import skip_reason, slice_ready
 
 pytestmark = [
@@ -13,7 +15,13 @@ pytestmark = [
 
 
 def test_grep_vite_clean_in_runtime_trees() -> None:
-    for rel in ("web", "api", "docker-compose.yml"):
-        path = ROOT / rel
-        if path.is_file():
-            assert "vite" not in path.read_text().lower()
+    compose = COMPOSE.read_text().lower()
+    assert "vite" not in compose
+    assert "supabase" not in compose
+    web = json.loads(WEB_PACKAGE.read_text())
+    deps = {**web.get("dependencies", {}), **web.get("devDependencies", {})}
+    assert "vite" not in deps
+    assert "@vitejs/plugin-react" not in deps
+    assert "@supabase/supabase-js" not in deps
+    root = json.loads((ROOT / "package.json").read_text())
+    assert "vite" not in json.dumps(root)
