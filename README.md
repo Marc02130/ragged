@@ -2,7 +2,7 @@
 
 Personal document Q&A: register, create a thread, upload PDF/DOCX/TXT/RTF, ask questions against **that thread**. One public HTTP port via Docker Compose.
 
-This is the containerized app (FastAPI + Webpack React + Postgres/pgvector). The old Vite/Supabase trees are not the runtime.
+This is a Compose app: FastAPI (`api/`), Webpack React (`web/`), Postgres/pgvector. There is no Vite or Supabase runtime.
 
 ## Quick start
 
