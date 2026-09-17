@@ -172,3 +172,8 @@ web/node_modules/
 web/dist/
 .pytest_cache/
 __pycache__/
+
+# Scratch notes (Cursor / agents). Never `git add .` these to unstick a pull.
+Untitled
+Untitled.*
+tests/results/local/
