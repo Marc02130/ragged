@@ -1,7 +1,8 @@
-"""Slice 9 dogfood: follow the README from a clean checkout."""
+"""Slice 9 dogfood: README documents compose, origins, TLS, backups."""
 
 import pytest
 
+from tests.paths import ROOT
 from tests.slices import skip_reason, slice_ready
 
 pytestmark = [
@@ -12,4 +13,11 @@ pytestmark = [
 
 
 def test_operator_follows_readme(compose_stack: str) -> None:
-    pytest.skip("README walkthrough when slice 9 lands")
+    readme = (ROOT / "README.md").read_text()
+    assert "docker compose up" in readme
+    assert "PUBLIC_ORIGINS" in readme
+    assert "COOKIE_SECURE" in readme
+    assert "pg_dump" in readme
+    assert "data/uploads" in readme
+    assert "MiniLM" in readme or "local" in readme.lower()
+    assert compose_stack.startswith("http://")
