@@ -48,3 +48,24 @@ def test_evidence_query_skips_junk_and_references(compose_stack: str) -> None:
         assert "flowchart" not in blob
         if body["content"].strip() == "I don't have that in your documents.":
             assert body.get("sources") == []
+
+
+def test_all_junk_upload_is_422(compose_stack: str) -> None:
+    junk = (
+        "Substantial contributions to the conception or design of the work, the "
+        "acquisition, analysis, or interpretation of data for the work; final approval "
+        "of the version to be published; and agreement to be accountable for all aspects.\n"
+    )
+    email = f"uat-junk422-{uuid.uuid4().hex[:8]}@example.com"
+    with httpx.Client(base_url=compose_stack, timeout=60.0) as client:
+        client.post(
+            "/api/auth/register",
+            json={"email": email, "password": "correct-horse-battery"},
+        )
+        thread_id = client.post("/api/threads", json={"title": "junk422"}).json()["id"]
+        uploaded = client.post(
+            f"/api/threads/{thread_id}/documents",
+            files=[("files", ("contrib.txt", junk.encode(), "text/plain"))],
+        )
+        assert uploaded.status_code == 422
+        assert "no usable text" in uploaded.json()["detail"].lower()

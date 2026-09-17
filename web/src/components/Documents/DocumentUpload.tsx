@@ -61,8 +61,24 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ threadId, onUplo
     try {
       const data = (await api.documents.upload(threadId, files)) as Document[];
       setProgress([]);
+      const ready = data.filter((doc) => doc.status === 'ready');
+      const failed = data.filter((doc) => doc.status === 'failed');
       onUploadComplete(data);
-      showToast('success', `${data.length} document(s) uploaded successfully`);
+      if (!ready.length) {
+        const msg =
+          failed.map((doc) => doc.error_message).filter(Boolean).join('\n') ||
+          'No usable text in uploaded file(s)';
+        setError(msg);
+        showToast('error', msg);
+      } else if (failed.length) {
+        showToast(
+          'error',
+          `${failed.length} file(s) failed: ${failed[0].error_message || 'ingest failed'}`,
+        );
+        showToast('success', `${ready.length} document(s) uploaded successfully`);
+      } else {
+        showToast('success', `${ready.length} document(s) uploaded successfully`);
+      }
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

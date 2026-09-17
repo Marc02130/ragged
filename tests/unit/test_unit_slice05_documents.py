@@ -175,7 +175,7 @@ def test_mixed_type_request_is_415_whole(client, tmp_path) -> None:
 def test_embed_error_marks_failed_not_ready(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
 
-    def boom(_texts: list[str]) -> list[list[float]]:
+    def boom(_texts: list[str], **_k: object) -> list[list[float]]:
         raise RuntimeError("openai down")
 
     monkeypatch.setattr(embeddings_service, "embed_texts", boom)
@@ -184,9 +184,8 @@ def test_embed_error_marks_failed_not_ready(client, monkeypatch) -> None:
         f"/api/threads/{thread_id}/documents",
         files=[("files", ("notes.pdf", SAMPLE_PDF.read_bytes(), "application/pdf"))],
     )
-    assert response.status_code == 201
-    assert response.json()[0]["status"] == "failed"
-    assert response.json()[0]["chunk_count"] == 0
+    assert response.status_code == 422
+    assert "openai down" in response.json()["detail"].lower()
 
 
 def test_concurrent_quota_does_not_exceed_20(client) -> None:

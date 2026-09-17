@@ -10,6 +10,14 @@ from app.services.extract import extract_text
 pytestmark = [pytest.mark.unit]
 
 
+@pytest.fixture(autouse=True)
+def _upload_root(tmp_path, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "UPLOAD_ROOT", str(tmp_path))
+    return tmp_path
+
+
 def test_icmje_contribution_is_junk() -> None:
     text = (
         "Substantial contributions to the conception or design of the work, the "
@@ -43,6 +51,23 @@ def test_sample_pdf_still_extracts() -> None:
     data = (ROOT / "api" / "tests" / "fixtures" / "sample.pdf").read_bytes()
     text = extract_text(data, "pdf")
     assert "hello" in text.lower() or "ragged" in text.lower()
+
+
+def test_all_junk_upload_is_422(client) -> None:
+    from tests.unit.test_unit_slice06_messages import _register_and_thread
+
+    _, thread_id = _register_and_thread(client)
+    junk = (
+        "Substantial contributions to the conception or design of the work, the "
+        "acquisition, analysis, or interpretation of data; final approval of the "
+        "version to be published; and agreement to be accountable for all aspects.\n"
+    )
+    response = client.post(
+        f"/api/threads/{thread_id}/documents",
+        files=[("files", ("contrib.txt", junk.encode(), "text/plain"))],
+    )
+    assert response.status_code == 422
+    assert "no usable text" in response.json()["detail"].lower()
 
 
 def test_canned_answer_stores_no_sources(client, monkeypatch) -> None:

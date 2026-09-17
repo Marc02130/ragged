@@ -211,7 +211,12 @@ def upload_documents(
                 _fail_document(session, row, "ingest interrupted")
         session.commit()
 
-    return [session.get(Document, doc.id) for doc in created]
+    rows = [session.get(Document, doc.id) for doc in created]
+    rows = [row for row in rows if row is not None]
+    if rows and all(row.status == "failed" for row in rows):
+        detail = rows[0].error_message or "no usable text after dropping junk chunks"
+        raise HTTPException(status_code=422, detail=detail)
+    return rows
 
 
 def _ingest_one(
