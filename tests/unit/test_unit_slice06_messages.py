@@ -80,7 +80,7 @@ def test_messages_router_forbids_client_model_and_cross_thread() -> None:
     rag = (ROOT / "api" / "app" / "services" / "rag.py").read_text()
     prompts = (ROOT / "api" / "app" / "prompts.py").read_text()
     combined = text + rag + prompts
-    assert ":threshold" in rag
+    assert ":candidate" in rag or "SIMILARITY_THRESHOLD" in rag
     from app.config import settings as app_settings
 
     assert app_settings.SIMILARITY_THRESHOLD == 0.4
@@ -191,7 +191,7 @@ def test_extra_fields_and_length_rejected(client) -> None:
     )
 
 
-def test_cosine_below_threshold_refused_above_hits(client, monkeypatch) -> None:
+def test_cosine_below_threshold_falls_back_to_nearest_chunks(client, monkeypatch) -> None:
     from app.services import embeddings as embeddings_service
     from app.services import rag as rag_service
 
@@ -200,24 +200,17 @@ def test_cosine_below_threshold_refused_above_hits(client, monkeypatch) -> None:
 
     def fake_complete(prompt: str, *_args, **_kwargs) -> str:
         chat_calls.append(prompt)
-        return "hit"
+        return "from nearest papers"
 
     monkeypatch.setattr(rag_service, "complete", fake_complete)
 
-    user, low_thread = _register_and_thread(client)
-    _seed_chunk(user["id"], low_thread, _unit_vec(0.39))
-    low = client.post(
-        f"/api/threads/{low_thread}/messages", json={"content": "query"}
+    user, thread_id = _register_and_thread(client)
+    _seed_chunk(user["id"], thread_id, _unit_vec(0.39), content="gut microbiome")
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"content": "what hypotheses have the best evidence"},
     )
-    assert low.json()["assistant_message"]["content"] == CANNED
-    assert chat_calls == []
-
-    high_user, high_thread = _register_and_thread(client)
-    _seed_chunk(high_user["id"], high_thread, _unit_vec(0.41), content="needle")
-    high = client.post(
-        f"/api/threads/{high_thread}/messages", json={"content": "query"}
-    )
-    assert high.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["assistant_message"]["content"] == "from nearest papers"
+    assert response.json()["assistant_message"]["sources"]
     assert chat_calls
-    assert high.json()["assistant_message"]["content"] == "hit"
-    assert high.json()["assistant_message"]["sources"]
