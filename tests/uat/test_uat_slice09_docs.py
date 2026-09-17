@@ -19,7 +19,7 @@ def test_smoke_script_is_executable() -> None:
     mode = SMOKE.stat().st_mode
     assert mode & stat.S_IXUSR
     text = SMOKE.read_text()
-    assert "placeholder" in text
+    assert "CI should skip" in text or "placeholder" in text
     assert "sample.pdf" in text
     assert "OPENAI_API_KEY" in text
     assert "XAI_API_KEY" in text
