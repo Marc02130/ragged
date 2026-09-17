@@ -69,18 +69,56 @@ Requires a real OpenAI, xAI, or Anthropic key in the environment or `.env` for t
 
 Hits health, register, thread, upload `api/tests/fixtures/sample.pdf`, an in-corpus query, and an out-of-corpus refusal.
 
-## Operator notes
+## Docker and volumes
 
-**TLS.** Compose v1 is HTTP on `:8080`. Put Caddy, Traefik, or a cloud load balancer in front; then set `COOKIE_SECURE=true` and `PUBLIC_ORIGINS` to the `https://` origin.
+All app data lives in **named Docker volumes**, not in the git checkout. The same Compose file works on any machine with Docker; you do not depend on a host path like `./data/uploads`.
 
-**Backups.** Nightly is a reasonable default:
+| Volume | Service mount | Contents |
+| --- | --- | --- |
+| `pgdata` | `db` → `/var/lib/postgresql/data` | Users, threads, chat, extracted text, embeddings |
+| `uploads` | `api` → `/data/uploads` | Original PDFs/DOCX/TXT/RTF |
+
+Compose names them with the project directory, usually `ragged_pgdata` and `ragged_uploads` (`docker volume ls`).
+
+### Commands that keep data
+
+These recreate **containers and images** only. Volumes stay.
+
+```bash
+docker compose up --build          # start or rebuild images, keep volumes
+docker compose up -d --build       # same, detached
+docker compose down                # stop and remove containers; keep volumes
+docker compose restart             # restart containers
+docker compose build --no-cache    # rebuild images; does not delete volumes
+docker image prune                 # unused images only
+docker system prune                # unused images/networks; volumes kept unless you pass --volumes
+```
+
+### Commands that delete papers and the database
+
+```bash
+docker compose down -v             # remove containers AND volumes
+docker volume rm ragged_pgdata ragged_uploads
+docker volume prune                # unused volumes
+docker system prune --volumes      # includes unused volumes
+```
+
+Do not use `-v` / `--volumes` / `volume prune` if you want to keep chats and uploads.
+
+### Backups
+
+Nightly dump of both volumes:
 
 ```bash
 docker compose exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > ragged-$(date +%F).sql
-tar -czf uploads-$(date +%F).tar.gz data/uploads
+docker compose exec -T api tar -C /data/uploads -czf - . > uploads-$(date +%F).tar.gz
 ```
 
-Volumes: Compose `pgdata` and bind mount `./data/uploads`.
+Restore SQL with `docker compose exec -T db psql -U "$POSTGRES_USER" "$POSTGRES_DB" < ragged-YYYY-MM-DD.sql`. Restore uploads by unpacking the tarball into the `uploads` volume (for example `docker compose exec -T api tar -C /data/uploads -xzf - < uploads-YYYY-MM-DD.tar.gz`).
+
+### TLS
+
+Compose v1 is HTTP on `:8080`. Put Caddy, Traefik, or a cloud load balancer in front; then set `COOKIE_SECURE=true` and `PUBLIC_ORIGINS` to the `https://` origin.
 
 ## What this app does not do
 

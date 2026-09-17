@@ -18,6 +18,9 @@ def test_operator_follows_readme(compose_stack: str) -> None:
     assert "PUBLIC_ORIGINS" in readme
     assert "COOKIE_SECURE" in readme
     assert "pg_dump" in readme
-    assert "data/uploads" in readme
+    assert "pgdata" in readme
+    assert "uploads" in readme
+    assert "docker compose down" in readme
+    assert "docker compose down -v" in readme
     assert "MiniLM" in readme or "local" in readme.lower()
     assert compose_stack.startswith("http://")
