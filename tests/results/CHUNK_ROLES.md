@@ -75,9 +75,10 @@ Key unit assertions verified:
 
 1. Env-only: slice01 `:8000`/`:8080` publish assertion under host-network `docker-compose.override.yml` (same class as slices 07–10 box runs)
 2. Box Docker bridge: container-to-container TCP to `db:5432` timed out without host-network override — environment issue, not product
-3. Results PR opened from `qa/chunk-roles-uat-results` into `feat/chunk-roles` when applicable
+3. Feature branch itself had no product PR open at UAT time; results PR #17 opened into `feat/chunk-roles`
 
 ## Remote status
 
 - **Local results path:** `/workspace/ragged/tests/results/CHUNK_ROLES.md`
+- **PR:** https://github.com/Marc02130/ragged/pull/17 (`qa/chunk-roles-uat-results` → `feat/chunk-roles`)
 - Dogfood focus for Ragged Dogfood: same-thread mechanisms → “what hypotheses have the best evidence” on real PDFs; confirm sources are claim/finding/evaluation text, not References; optional instrumentation / personal-experience queries
