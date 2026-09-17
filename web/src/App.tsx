@@ -11,6 +11,9 @@ import { ThreadList } from './components/Threads/ThreadList';
 import { CreateThreadModal } from './components/Threads/CreateThreadModal';
 import { DocumentUpload } from './components/Documents/DocumentUpload';
 import { ChatInterface } from './components/Chat/ChatInterface';
+import { ConfirmationModal } from './components/UI/ConfirmationModal';
+import { useToast } from './context/ToastContext';
+import { ApiError } from './lib/api';
 import type { Document, Thread } from './types';
 
 const Shell: React.FC = () => {
@@ -19,6 +22,9 @@ const Shell: React.FC = () => {
   const [showCreateThread, setShowCreateThread] = useState(false);
   const [currentThread, setCurrentThread] = useState<Thread | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const { showToast } = useToast();
+  const [deleteDoc, setDeleteDoc] = useState<Document | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!currentThread) {
@@ -78,9 +84,18 @@ const Shell: React.FC = () => {
                 ) : (
                   <ul className="mb-3 space-y-1">
                     {documents.map((doc) => (
-                      <li key={doc.id} className="text-sm text-gray-700 flex justify-between gap-2">
+                      <li key={doc.id} className="text-sm text-gray-700 flex items-center justify-between gap-2">
                         <span className="truncate">{doc.file_name}</span>
-                        <span className="shrink-0 text-xs text-gray-500">{doc.status}</span>
+                        <span className="shrink-0 flex items-center gap-2">
+                          <span className="text-xs text-gray-500">{doc.status}</span>
+                          <button
+                            type="button"
+                            className="text-xs text-red-600"
+                            onClick={() => setDeleteDoc(doc)}
+                          >
+                            Delete
+                          </button>
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -119,6 +134,34 @@ const Shell: React.FC = () => {
         onThreadCreated={(thread) => {
           setCurrentThread(thread);
           setShowCreateThread(false);
+        }}
+      />
+      <ConfirmationModal
+        isOpen={deleteDoc !== null}
+        title="Delete document"
+        message={
+          deleteDoc
+            ? `Remove "${deleteDoc.file_name}" from this thread? Chat will no longer use it.`
+            : ''
+        }
+        confirmText="Delete"
+        type="danger"
+        loading={deleting}
+        onCancel={() => setDeleteDoc(null)}
+        onConfirm={() => {
+          if (!currentThread || !deleteDoc) return;
+          setDeleting(true);
+          void api.documents
+            .delete(currentThread.id, deleteDoc.id)
+            .then(() => {
+              setDocuments((prev) => prev.filter((item) => item.id !== deleteDoc.id));
+              showToast('success', 'Document deleted');
+              setDeleteDoc(null);
+            })
+            .catch((err: unknown) => {
+              showToast('error', err instanceof ApiError ? err.message : 'Delete failed');
+            })
+            .finally(() => setDeleting(false));
         }}
       />
     </div>

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -89,6 +89,26 @@ def get_document(
     if doc is None or doc.thread_id != thread.id or doc.user_id != thread.user_id:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+@router.delete("/threads/{thread_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    doc_id: UUID,
+    thread: Thread = Depends(get_owned_thread),
+    session: Session = Depends(get_db),
+) -> Response:
+    doc = session.get(Document, doc_id)
+    if doc is None or doc.thread_id != thread.id or doc.user_id != thread.user_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    relative = doc.file_path
+    session.delete(doc)
+    _refresh_document_count(session, thread)
+    session.commit()
+    try:
+        files_service.unlink_if_exists(relative)
+    except ValueError:
+        pass
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

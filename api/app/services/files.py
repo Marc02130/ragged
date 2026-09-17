@@ -40,3 +40,9 @@ def write_bytes(relative: str, data: bytes) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return path
+
+
+def unlink_if_exists(relative: str) -> None:
+    path = resolve_under_root(relative)
+    if path.is_file():
+        path.unlink()

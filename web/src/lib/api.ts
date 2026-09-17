@@ -75,6 +75,7 @@ export const api = {
     list: (threadId: string) => get(`/threads/${threadId}/documents`),
     get: (threadId: string, docId: string) => get(`/threads/${threadId}/documents/${docId}`),
     upload: (threadId: string, files: File[]) => postForm(`/threads/${threadId}/documents`, files),
+    delete: (threadId: string, docId: string) => del(`/threads/${threadId}/documents/${docId}`),
   },
   messages: {
     list: (threadId: string) => get<Message[]>(`/threads/${threadId}/messages`),
