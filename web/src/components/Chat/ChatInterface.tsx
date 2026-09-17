@@ -90,7 +90,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ threadId, threadTi
               }`}
             >
               <div className="text-sm">{message.content}</div>
-              {message.role === 'assistant' && message.sources.length > 0 && (
+              {message.role === 'assistant' &&
+                message.sources.length > 0 &&
+                message.content.trim() !== "I don't have that in your documents." && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Sources:</p>
                   {message.sources.slice(0, 3).map((source) => (

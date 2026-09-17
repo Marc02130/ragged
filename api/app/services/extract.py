@@ -75,6 +75,19 @@ def _decode_text(data: bytes) -> str:
 
 
 def _extract_pdf(data: bytes) -> str:
+    try:
+        import fitz
+
+        doc = fitz.open(stream=data, filetype="pdf")
+        try:
+            parts = [page.get_text("text") or "" for page in doc]
+        finally:
+            doc.close()
+        text = "\n".join(parts).strip()
+        if text:
+            return text
+    except Exception:
+        pass
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(data))

@@ -205,7 +205,12 @@ def test_cosine_below_threshold_falls_back_to_nearest_chunks(client, monkeypatch
     monkeypatch.setattr(rag_service, "complete", fake_complete)
 
     user, thread_id = _register_and_thread(client)
-    _seed_chunk(user["id"], thread_id, _unit_vec(0.39), content="gut microbiome")
+    _seed_chunk(
+        user["id"],
+        thread_id,
+        _unit_vec(0.39),
+        content="We hypothesize that gut microbes influence Alzheimer pathology via SCFAs.",
+    )
     response = client.post(
         f"/api/threads/{thread_id}/messages",
         json={"content": "what hypotheses have the best evidence"},

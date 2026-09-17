@@ -104,13 +104,51 @@ def classify_chunk(text: str, heading: str = "") -> str:
     return "context"
 
 
+_JUNK_PHRASES = (
+    "substantial contributions to the conception",
+    "final approval of the version to be published",
+    "agreement to be accountable for all aspects",
+    "competing interests",
+    "data availability",
+    "acknowledgements",
+    "informed consent",
+    "ethics committee",
+)
+_FIGURE_CAPTION = re.compile(
+    r"\bfigure\s+\d+\b.*\b(illustrates|shows|flowchart|flow chart)\b",
+    re.I | re.S,
+)
+
+
+def is_junk_chunk(text: str, heading: str = "") -> bool:
+    """Drop before embed: captions, author-contribution, page numbers, citation soup."""
+    piece = (text or "").strip()
+    if len(piece) < 8:
+        return True
+    if re.fullmatch(r"[\d\s.\-]+", piece):
+        return True
+    low = _norm(f"{heading}\n{piece}")
+    if any(p in low for p in _JUNK_PHRASES):
+        return True
+    if _FIGURE_CAPTION.search(piece):
+        return True
+    if classify_chunk(piece, heading) in EXCLUDE_DEFAULT:
+        return True
+    words = re.findall(r"[A-Za-z]{2,}", piece)
+    digit_ratio = sum(c.isdigit() for c in piece) / max(len(piece), 1)
+    if digit_ratio > 0.4 and len(words) < 40:
+        return True
+    return False
+
+
 def classify_query(question: str) -> frozenset[str]:
     q = _norm(question)
     roles: set[str] = set()
+    # Evidence / "strongest hypotheses" must not pull context (captions, author statements).
+    if any(k in q for k in ("evidence", "finding", "support", "strongest", "result", "observ")):
+        return frozenset({"finding", "evaluation", "claim"})
     if any(k in q for k in ("hypothes", "mechanism", "propos", "theor", "argue", "claim")):
         roles.update({"claim", "context", "evaluation"})
-    if any(k in q for k in ("evidence", "finding", "support", "strongest", "result", "observ")):
-        roles.update({"finding", "evaluation", "claim"})
     if any(k in q for k in ("instrument", "protocol", "method", "how did they", "how was", "assay", "hplc", "statistic")):
         roles.update({"method"})
     if any(k in q for k in ("i feel", "i felt", "my diary", "personal", "anecdote")):

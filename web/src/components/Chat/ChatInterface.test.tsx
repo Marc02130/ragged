@@ -79,4 +79,38 @@ describe('ChatInterface', () => {
     const postCall = (global.fetch as jest.Mock).mock.calls.find((call) => call[1]?.method === 'POST');
     expect(postCall[0]).toBe('/api/threads/t1/messages');
   });
+
+  it('hides sources when the assistant returns the canned refusal', async () => {
+    (global.fetch as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: 'a-canned',
+            role: 'assistant',
+            content: "I don't have that in your documents.",
+            created_at: '2026-01-01T00:00:01Z',
+            sources: [
+              {
+                chunk_id: 'c-junk',
+                document_id: 'd1',
+                file_name: 'paper.pdf',
+                content: 'Substantial contributions to the conception',
+                similarity: 0.2,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    render(
+      <ToastProvider>
+        <ChatInterface threadId="t1" threadTitle="Lab" />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText("I don't have that in your documents.")).toBeInTheDocument();
+    expect(screen.queryByText('Sources:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Substantial contributions to the conception')).not.toBeInTheDocument();
+  });
 });

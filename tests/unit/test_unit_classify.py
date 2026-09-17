@@ -61,6 +61,8 @@ def test_query_best_evidence_excludes_citation() -> None:
     roles = allowed_roles("what hypotheses have the best evidence")
     assert "finding" in roles
     assert "claim" in roles
+    assert "evaluation" in roles
+    assert "context" not in roles
     assert "citation" not in roles
     assert "boilerplate" not in roles
 

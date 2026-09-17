@@ -229,7 +229,16 @@ def _ingest_one(
     labeled = chunk_service.split_with_headings(
         text, chunk_size=settings.CHUNK_SIZE, overlap=settings.CHUNK_OVERLAP
     )
+    labeled = [
+        (piece, heading)
+        for piece, heading in labeled
+        if not classify.is_junk_chunk(piece, heading)
+    ]
     pieces = [piece for piece, _heading in labeled]
+    if not pieces:
+        _fail_document(session, doc, "no usable text after dropping junk chunks")
+        session.commit()
+        return
     if len(pieces) > settings.MAX_CHUNKS_PER_DOCUMENT:
         _fail_document(session, doc, "too many chunks")
         session.commit()

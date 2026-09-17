@@ -202,10 +202,6 @@ def nearest_chunks(
             )
         )
     hits = [h for h in parsed if h.role in allowed]
-    if not hits:
-        from app.services.classify import DEFAULT_RETRIEVE
-
-        hits = [h for h in parsed if h.role in DEFAULT_RETRIEVE]
     return hits[: settings.MAX_VECTOR_RESULTS]
 
 
@@ -255,12 +251,13 @@ def answer(
     sources = [hit.as_source() for hit in hits]
     prompt = build_prompt(question, sources)
     content = complete(prompt, user, session)
+    stored_sources = [] if content.strip() == CANNED_REFUSAL else sources
     assistant_row = Conversation(
         thread_id=thread_id,
         user_id=user_id,
         role="assistant",
         content=content,
-        extra={"sources": sources},
+        extra={"sources": stored_sources},
     )
     session.add(assistant_row)
     _touch_thread(session, thread_id)
