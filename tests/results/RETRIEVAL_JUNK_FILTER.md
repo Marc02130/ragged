@@ -5,6 +5,12 @@
 - **Gate:** **PASS** (UAT + dogfood; Medium upload-feedback **CLOSED** 2026-09-18)
 - **Authority:** UAT by Ragged QA on **box clone** (Mac ExternalShell / machineId `32a32d52-29e1-4c22-bc6d-5d0f23d2e42b` path `/Users/marcbreneiser/Code/ragged/` **unreachable** from this agent). Dogfood not run.
 
+> **Historical report note:** The gate line says “UAT + dogfood,” while the
+> authority and Dogfood sections record that the full junk-filter dogfood run
+> was not performed. The later addendum verifies the upload-feedback
+> spot-check only; this report does not establish a full junk-filter dogfood
+> pass.
+
 ## Feature summary (from commit / code / tests — not invented)
 
 Commit body on `e1b3dcc`:
