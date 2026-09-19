@@ -148,7 +148,7 @@ def split_with_headings(
     return out or [(piece, "") for piece in split_text(text, chunk_size, overlap)]
 
 
-def query_terms(*texts: str) -> list[str]:
+def query_terms(*texts: str, limit: int = 8) -> list[str]:
     blob = " ".join(texts).lower()
     found: list[str] = []
     seen: set[str] = set()
@@ -157,14 +157,29 @@ def query_terms(*texts: str) -> list[str]:
             continue
         seen.add(raw)
         found.append(raw)
-        if len(found) >= 8:
+        if len(found) >= limit:
             break
     return found
 
 
+def unique_questions(questions: list[str], limit: int = 8) -> list[str]:
+    """Keep up to `limit` most recent unique questions, oldest first."""
+    newest_first: list[str] = []
+    seen: set[str] = set()
+    for raw in reversed([q.strip() for q in questions if q.strip()]):
+        key = re.sub(r"\s+", " ", raw.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        newest_first.append(raw)
+        if len(newest_first) >= limit:
+            break
+    return list(reversed(newest_first))
+
+
 def expand_query(question: str, prior_user_questions: list[str]) -> str:
-    """Follow-ups keep prior user turns in the embedding text."""
-    prior = [q.strip() for q in prior_user_questions if q.strip()][-2:]
+    """Follow-ups keep prior unique user turns in the embedding text."""
+    prior = unique_questions(prior_user_questions, limit=2)
     if not prior:
         return question
     return " ".join(prior) + " " + question

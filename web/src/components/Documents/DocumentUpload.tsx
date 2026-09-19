@@ -58,37 +58,62 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ threadId, onUplo
   const uploadFiles = async (files: File[]) => {
     setUploading(true);
     setProgress(files.map((file) => ({ file, progress: 0, status: 'uploading' as const })));
+    const collected: Document[] = [];
+    const failures: string[] = [];
     try {
-      const data = (await api.documents.upload(threadId, files)) as Document[];
-      setProgress([]);
-      const ready = data.filter((doc) => doc.status === 'ready');
-      const failed = data.filter((doc) => doc.status === 'failed');
-      onUploadComplete(data);
-      if (!ready.length) {
-        const msg =
-          failed.map((doc) => doc.error_message).filter(Boolean).join('\n') ||
-          'No usable text in uploaded file(s)';
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        try {
+          const data = (await api.documents.upload(threadId, [file])) as Document[];
+          collected.push(...data);
+          const ready = data.filter((doc) => doc.status === 'ready');
+          const failed = data.filter((doc) => doc.status === 'failed');
+          failed.forEach((doc) => {
+            failures.push(doc.error_message || `${file.name} failed`);
+          });
+          if (!ready.length && !failed.length) {
+            failures.push(`${file.name} failed`);
+          }
+          if (ready.length) {
+            onUploadComplete([...collected]);
+          }
+          setProgress((prev) =>
+            prev.map((item, itemIndex) =>
+              itemIndex === index
+                ? {
+                    ...item,
+                    progress: 100,
+                    status: ready.length ? 'complete' : 'error',
+                  }
+                : item,
+            ),
+          );
+        } catch (err) {
+          const message = err instanceof ApiError ? err.message : 'Upload failed';
+          failures.push(`${file.name}: ${message}`);
+          setProgress((prev) =>
+            prev.map((item, itemIndex) =>
+              itemIndex === index ? { ...item, status: 'error' as const } : item,
+            ),
+          );
+        }
+      }
+      const readyCount = collected.filter((doc) => doc.status === 'ready').length;
+      if (!readyCount && failures.length) {
+        const msg = failures.join('\n') || 'No usable text in uploaded file(s)';
         setError(msg);
         showToast('error', msg);
-      } else if (failed.length) {
-        showToast(
-          'error',
-          `${failed.length} file(s) failed: ${failed[0].error_message || 'ingest failed'}`,
-        );
-        showToast('success', `${ready.length} document(s) uploaded successfully`);
-      } else {
-        showToast('success', `${ready.length} document(s) uploaded successfully`);
+      } else if (failures.length) {
+        showToast('error', `${failures.length} file(s) failed: ${failures[0]}`);
+        showToast('success', `${readyCount} document(s) uploaded successfully`);
+      } else if (readyCount) {
+        showToast('success', `${readyCount} document(s) uploaded successfully`);
       }
+    } finally {
+      setUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Upload failed';
-      setError(message);
-      setProgress((prev) => prev.map((item) => ({ ...item, status: 'error' as const })));
-      showToast('error', `Upload failed: ${message}`);
-    } finally {
-      setUploading(false);
     }
   };
 

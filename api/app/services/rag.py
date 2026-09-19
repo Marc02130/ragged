@@ -15,8 +15,12 @@ from app.prompts import CANNED_REFUSAL, build_prompt
 from app.services import chat as chat_service
 from app.services import embeddings as embeddings_service
 from app.services import llm_keys
-from app.services.chunk import expand_query, heading_boost, query_terms
-from app.services.classify import allowed_roles, resolve_role
+from app.services.chunk import expand_query, heading_boost, query_terms, unique_questions
+from app.services.classify import excluded_roles, preferred_roles, resolve_role
+from app.services.rewrite import QueryPlan, rewrite_query
+
+RRF_K = 60
+ROLE_BOOST = 0.05
 
 
 @dataclass
@@ -60,20 +64,42 @@ def _prior_user_questions(session: Session, thread_id: UUID, user_id: UUID) -> l
             Conversation.role == "user",
         )
         .order_by(Conversation.created_at.desc())
-        .limit(2)
+        .limit(50)
     ).all()
-    return list(reversed(list(rows)))
+    newest_first = [row for row in rows if row]
+    return unique_questions(list(reversed(newest_first)), limit=8)
 
 
-def search_chunks(
+def _row_to_hit(row) -> Hit:
+    role = resolve_role(row["content"], row["heading"] or "", row.get("role") or None)
+    return Hit(
+        chunk_id=row["id"],
+        document_id=row["document_id"],
+        file_name=row["file_name"],
+        content=row["content"],
+        chunk_index=row["chunk_index"],
+        similarity=float(row["similarity"]),
+        heading=row["heading"] or "",
+        role=role,
+    )
+
+
+def _pool_score(hit: Hit, question: str, expanded: str, preferred: frozenset[str]) -> float:
+    boost = heading_boost(hit.heading, question, expanded)
+    role_bonus = ROLE_BOOST if hit.role in preferred else 0.0
+    return hit.similarity + boost + role_bonus
+
+
+def search_pool(
     session: Session,
     user_id: UUID,
     thread_id: UUID,
     query_vec: list[float],
     question: str,
     expanded: str,
+    likes: list[str],
 ) -> list[Hit]:
-    likes = [f"%{term}%" for term in query_terms(question, expanded)]
+    """Wide candidate rows. Citation/boilerplate dropped unless asked; other roles kept."""
     candidate = _candidate_threshold()
     wide_k = max(24, settings.MAX_VECTOR_RESULTS * 3)
     sql = text(
@@ -119,29 +145,51 @@ def search_chunks(
             "wide_k": wide_k,
         },
     ).mappings()
-    allowed = allowed_roles(question)
-    scored: list[tuple[float, Hit]] = []
-    for row in rows:
-        role = resolve_role(row["content"], row["heading"] or "", row.get("role") or None)
-        if role not in allowed:
+    excluded = excluded_roles(question)
+    preferred = preferred_roles(question)
+    hits = [_row_to_hit(row) for row in rows]
+    hits = [hit for hit in hits if hit.role not in excluded]
+    hits.sort(key=lambda hit: _pool_score(hit, question, expanded, preferred), reverse=True)
+    return hits
+
+
+def search_chunks(
+    session: Session,
+    user_id: UUID,
+    thread_id: UUID,
+    query_vec: list[float],
+    question: str,
+    expanded: str,
+) -> list[Hit]:
+    likes = [f"%{term}%" for term in query_terms(question, expanded)]
+    pool = search_pool(session, user_id, thread_id, query_vec, question, expanded, likes)
+    return fuse_rrf([pool], question, expanded) if pool else []
+
+
+def fuse_rrf(
+    rankings: list[list[Hit]],
+    question: str,
+    expanded: str,
+    k: int = RRF_K,
+) -> list[Hit]:
+    """Reciprocal rank fusion across original / rewrite / HyDE pools."""
+    preferred = preferred_roles(question)
+    scores: dict[UUID, float] = {}
+    best: dict[UUID, Hit] = {}
+    for ranking in rankings:
+        if not ranking:
             continue
-        hit = Hit(
-            chunk_id=row["id"],
-            document_id=row["document_id"],
-            file_name=row["file_name"],
-            content=row["content"],
-            chunk_index=row["chunk_index"],
-            similarity=float(row["similarity"]),
-            heading=row["heading"] or "",
-            role=role,
+        ordered = sorted(
+            ranking,
+            key=lambda hit: _pool_score(hit, question, expanded, preferred),
+            reverse=True,
         )
-        boost = heading_boost(hit.heading, question, expanded)
-        score = hit.similarity + boost
-        keep = score >= settings.SIMILARITY_THRESHOLD or (
-            boost >= 0.12 and hit.similarity >= candidate
-        )
-        if keep:
-            scored.append((score, hit))
+        for rank, hit in enumerate(ordered):
+            scores[hit.chunk_id] = scores.get(hit.chunk_id, 0.0) + 1.0 / (k + rank + 1)
+            prev = best.get(hit.chunk_id)
+            if prev is None or hit.similarity > prev.similarity:
+                best[hit.chunk_id] = hit
+    scored = [(score, best[cid]) for cid, score in scores.items()]
     scored.sort(key=lambda item: item[0], reverse=True)
     return [hit for _score, hit in scored[: settings.MAX_VECTOR_RESULTS]]
 
@@ -153,7 +201,7 @@ def nearest_chunks(
     query_vec: list[float],
     question: str,
 ) -> list[Hit]:
-    """Top-k by cosine with no cutoff. Used when the threshold screen is empty
+    """Top-k by cosine with no cutoff. Used when the wide pool is empty
     but the thread already has papers (follow-ups, 'review the documents', etc.)."""
     sql = text(
         """
@@ -185,23 +233,11 @@ def nearest_chunks(
             "k": max(32, settings.MAX_VECTOR_RESULTS * 4),
         },
     ).mappings()
-    allowed = allowed_roles(question)
-    parsed: list[Hit] = []
-    for row in rows:
-        role = resolve_role(row["content"], row["heading"] or "", row.get("role") or None)
-        parsed.append(
-            Hit(
-                chunk_id=row["id"],
-                document_id=row["document_id"],
-                file_name=row["file_name"],
-                content=row["content"],
-                chunk_index=row["chunk_index"],
-                similarity=float(row["similarity"]),
-                heading=row["heading"] or "",
-                role=role,
-            )
-        )
-    hits = [h for h in parsed if h.role in allowed]
+    excluded = excluded_roles(question)
+    preferred = preferred_roles(question)
+    parsed = [_row_to_hit(row) for row in rows]
+    hits = [hit for hit in parsed if hit.role not in excluded]
+    hits.sort(key=lambda hit: _pool_score(hit, question, "", preferred), reverse=True)
     return hits[: settings.MAX_VECTOR_RESULTS]
 
 
@@ -215,19 +251,49 @@ def complete(prompt: str, user: User, session: Session) -> str:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def retrieve_hits(
+    session: Session,
+    user: User,
+    thread_id: UUID,
+    question: str,
+    prior: list[str],
+    plan: QueryPlan,
+) -> list[Hit]:
+    user_id = user.id
+    expanded = expand_query(question, prior)
+    texts = plan.embed_texts(expanded)
+    vectors = embeddings_service.embed_texts(texts, user=user, session=session)
+    if not vectors:
+        return []
+    likes = [
+        f"%{term}%"
+        for term in query_terms(
+            question,
+            expanded,
+            plan.rewrite,
+            *plan.aliases,
+            limit=16,
+        )
+    ]
+    rankings = [
+        search_pool(session, user_id, thread_id, vec, question, expanded, likes)
+        for vec in vectors
+    ]
+    hits = fuse_rrf(rankings, question, expanded)
+    if hits:
+        return hits
+    return nearest_chunks(session, user_id, thread_id, vectors[0], question)
+
+
 def answer(
     session: Session, user: User, thread_id: UUID, question: str
 ) -> tuple[Conversation, Conversation]:
-    user_id = user.id
-    prior = _prior_user_questions(session, thread_id, user_id)
-    expanded = expand_query(question, prior)
-    query_vec = embeddings_service.embed_texts([expanded], user=user, session=session)[0]
-    hits = search_chunks(session, user_id, thread_id, query_vec, question, expanded)
-    if not hits:
-        hits = nearest_chunks(session, user_id, thread_id, query_vec, question)
+    prior = _prior_user_questions(session, thread_id, user.id)
+    plan = rewrite_query(question, prior, user, session)
+    hits = retrieve_hits(session, user, thread_id, question, prior, plan)
     user_row = Conversation(
         thread_id=thread_id,
-        user_id=user_id,
+        user_id=user.id,
         role="user",
         content=question,
         extra={"sources": []},
@@ -236,7 +302,7 @@ def answer(
     if not hits:
         assistant_row = Conversation(
             thread_id=thread_id,
-            user_id=user_id,
+            user_id=user.id,
             role="assistant",
             content=CANNED_REFUSAL,
             extra={"sources": []},
@@ -254,7 +320,7 @@ def answer(
     stored_sources = [] if content.strip() == CANNED_REFUSAL else sources
     assistant_row = Conversation(
         thread_id=thread_id,
-        user_id=user_id,
+        user_id=user.id,
         role="assistant",
         content=content,
         extra={"sources": stored_sources},

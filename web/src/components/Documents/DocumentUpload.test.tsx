@@ -60,4 +60,38 @@ describe('DocumentUpload', () => {
     ).not.toHaveLength(0);
     expect(screen.queryByText(/uploaded successfully/i)).not.toBeInTheDocument();
   });
+
+  it('uploads files one at a time', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => [
+        {
+          id: 'd1',
+          thread_id: 't1',
+          file_name: 'note.txt',
+          file_size: 10,
+          file_type: 'text/plain',
+          title: 'note.txt',
+          status: 'ready',
+          embedding_model: 'sentence-transformers/all-MiniLM-L6-v2',
+          chunk_count: 1,
+          error_message: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ],
+    });
+    render(
+      <ToastProvider>
+        <DocumentUpload threadId="t1" onUploadComplete={() => undefined} />
+      </ToastProvider>,
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileA = new File(['alpha text for upload'], 'a.txt', { type: 'text/plain' });
+    const fileB = new File(['bravo text for upload'], 'b.txt', { type: 'text/plain' });
+    await userEvent.setup().upload(input, [fileA, fileB]);
+    expect(await screen.findByText(/2 document\(s\) uploaded successfully/i)).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
 });

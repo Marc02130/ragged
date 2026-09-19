@@ -30,3 +30,12 @@ def test_stub_embed_texts_is_384() -> None:
     vectors = embed_texts(["hello ragged"])
     assert len(vectors) == 1
     assert len(vectors[0]) == 384
+
+
+def test_stub_embed_texts_returns_one_vector_per_input() -> None:
+    from app.services.embeddings import EMBED_BATCH, embed_texts
+
+    assert EMBED_BATCH == 32
+    vectors = embed_texts(["chunk"] * 40)
+    assert len(vectors) == 40
+    assert all(len(vec) == 384 for vec in vectors)

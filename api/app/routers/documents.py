@@ -21,7 +21,7 @@ from app.services.extract import KIND_MIME, UnsupportedFileType
 
 router = APIRouter(tags=["documents"])
 
-STALE_PROCESSING = timedelta(seconds=100)
+STALE_PROCESSING = timedelta(seconds=600)
 
 
 def _now() -> datetime:

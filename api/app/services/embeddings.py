@@ -6,6 +6,7 @@ from app.config import settings
 from app.models import User
 
 _model = None
+EMBED_BATCH = 32
 
 
 def uses_stub_embeddings(user: User | None = None, session: Session | None = None) -> bool:
@@ -30,5 +31,9 @@ def embed_texts(
         return []
     if uses_stub_embeddings(user, session):
         return [[0.01] * settings.EMBEDDING_DIM for _ in texts]
-    vectors = list(_get_model().embed(texts))
-    return [list(map(float, vec)) for vec in vectors]
+    model = _get_model()
+    out: list[list[float]] = []
+    for start in range(0, len(texts), EMBED_BATCH):
+        batch = texts[start : start + EMBED_BATCH]
+        out.extend(list(map(float, vec)) for vec in model.embed(batch))
+    return out

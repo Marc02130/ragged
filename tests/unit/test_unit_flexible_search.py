@@ -10,6 +10,7 @@ from app.services.chunk import (
     looks_like_heading,
     query_terms,
     split_with_headings,
+    unique_questions,
 )
 
 pytestmark = [pytest.mark.unit]
@@ -46,6 +47,21 @@ def test_expand_query_keeps_followup_on_topic() -> None:
     assert "gut biome" in expanded
     assert "best evidence" in expanded
     assert query_terms("what is the best evidence") == ["evidence"]
+
+
+def test_unique_questions_drops_repeated_followups() -> None:
+    questions = [
+        "how does the gut biome influence alzheimer development",
+        "review the documents and the evidence supporting their hypotheses",
+        "review the documents and the evidence supporting their hypotheses",
+        "review the documents and the evidence supporting their hypotheses",
+    ]
+    unique = unique_questions(questions, limit=8)
+    assert len(unique) == 2
+    assert unique[0].startswith("how does the gut")
+    terms = query_terms("evidence", "hypothesize", "we found", limit=16)
+    assert "hypothesize" in terms
+    assert "found" in terms
 
 
 def test_followup_embeds_expanded_text(client, monkeypatch) -> None:

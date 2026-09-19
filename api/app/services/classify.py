@@ -144,9 +144,10 @@ def is_junk_chunk(text: str, heading: str = "") -> bool:
 def classify_query(question: str) -> frozenset[str]:
     q = _norm(question)
     roles: set[str] = set()
-    # Evidence / "strongest hypotheses" must not pull context (captions, author statements).
+    # Evidence / "strongest hypotheses": keep context. Heuristics label most
+    # results/hypothesis prose as context; citation/boilerplate stay excluded.
     if any(k in q for k in ("evidence", "finding", "support", "strongest", "result", "observ")):
-        return frozenset({"finding", "evaluation", "claim"})
+        return frozenset({"finding", "evaluation", "claim", "context"})
     if any(k in q for k in ("hypothes", "mechanism", "propos", "theor", "argue", "claim")):
         roles.update({"claim", "context", "evaluation"})
     if any(k in q for k in ("instrument", "protocol", "method", "how did they", "how was", "assay", "hplc", "statistic")):
@@ -162,11 +163,22 @@ def classify_query(question: str) -> frozenset[str]:
     return frozenset(roles)
 
 
-def allowed_roles(question: str) -> frozenset[str]:
+def preferred_roles(question: str) -> frozenset[str]:
+    """Roles to boost for this question. Not a hard allow-list."""
     wanted = classify_query(question)
     if wanted & EXCLUDE_DEFAULT:
         return wanted
     return frozenset(r for r in wanted if r not in EXCLUDE_DEFAULT) or DEFAULT_RETRIEVE
+
+
+def excluded_roles(question: str) -> frozenset[str]:
+    """Hard-drop citation/boilerplate unless the user asked for them."""
+    wanted = classify_query(question)
+    return frozenset(r for r in EXCLUDE_DEFAULT if r not in wanted)
+
+
+def allowed_roles(question: str) -> frozenset[str]:
+    return preferred_roles(question)
 
 
 def resolve_role(text: str, heading: str, stored: str | None) -> str:

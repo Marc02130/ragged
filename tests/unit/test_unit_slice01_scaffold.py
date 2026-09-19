@@ -76,7 +76,7 @@ def test_dev_overlay_only_publishes_api_8001() -> None:
 def test_nginx_body_timeout_and_forwarded_headers() -> None:
     text = NGINX.read_text()
     assert "client_max_body_size 55m;" in text
-    assert "proxy_read_timeout 100s;" in text
+    assert "proxy_read_timeout 600s;" in text
     assert "proxy_ignore_client_abort on;" in text
     assert "location = /api { return 308 /api/; }" in text
     assert "X-Forwarded-Proto $scheme" in text
