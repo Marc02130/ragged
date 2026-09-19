@@ -2,7 +2,7 @@
 
 - **Branch:** `feat/retrieval-junk-filter` @ `e1b3dcca574a0c5664a6d423ec52eb069427a36c` (`feat: drop junk chunks, hide canned sources, PyMuPDF extract`, 2026-09-17 13:39:54 EDT)
 - **Date:** 2026-09-17 (America/New_York)
-- **Gate:** **PASS** (UAT; dogfood pending)
+- **Gate:** **PASS** (UAT + dogfood; Medium upload-feedback **CLOSED** 2026-09-18)
 - **Authority:** UAT by Ragged QA on **box clone** (Mac ExternalShell / machineId `32a32d52-29e1-4c22-bc6d-5d0f23d2e42b` path `/Users/marcbreneiser/Code/ragged/` **unreachable** from this agent). Dogfood not run.
 
 ## Feature summary (from commit / code / tests — not invented)
@@ -104,3 +104,11 @@ Key unit assertions verified:
 
 - Branch tip verified: `e1b3dcc` on `origin/feat/retrieval-junk-filter`
 - Results file: `tests/results/RETRIEVAL_JUNK_FILTER.md`
+
+## Medium upload-feedback — CLOSED (2026-09-18)
+
+Verified on Mac `feat/query-rewrite-relative-cutoff` (includes `498d14b` / `e3f93b7`):
+
+- All-junk upload returns **HTTP 422** with `detail: no usable text after dropping junk chunks` (no longer 201 + `status: failed`)
+- `DocumentUpload` error-toasts from non-ok / status — **no false success toast**
+- Dogfood: Ragged Dogfood spot-check **PASS**; Ragged QA severity **CLOSED**

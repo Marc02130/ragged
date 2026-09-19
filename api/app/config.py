@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     MAX_CONTENT_CHARS: int = 1_000_000
     MAX_QUERY_CHARS: int = 8000
     SIMILARITY_THRESHOLD: float = 0.4
+    RELATIVE_SCORE_MARGIN: float = 0.15
+    WIDE_VECTOR_RESULTS: int = 32
     MAX_VECTOR_RESULTS: int = 8
     MAX_FILE_SIZE: int = 10_485_760
     MAX_FILES_PER_THREAD: int = 20
