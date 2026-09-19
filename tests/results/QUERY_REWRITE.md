@@ -3,7 +3,7 @@
 - **Branch:** `feat/query-rewrite-relative-cutoff`
 - **Date:** 2026-09-18 (America/New_York)
 - **Gate:** **PASS** (unit, UAT, dogfood)
-- **Authority:** Ran on Mac compose at `http://127.0.0.1:8080` (`ragged-api-1` healthy). Operator dogfood of the live gut-AD thread already returned a non-canned answer after the citation override; pytest dogfood/UAT rechecked the same assertions on a fixture.
+- **Authority:** Initial author run on Mac compose; re-verified by Ragged QA (UAT) + Ragged Dogfood (pytest dogfood) on Mac checkout `/Users/marcbreneiser/Code/ragged/` 2026-09-18 evening.
 
 ## Feature summary
 
@@ -64,3 +64,9 @@ Suggested UI check: canned replies still hide Sources; successful review answers
 
 - Ingest characterization, Postgres FTS, BGE-small re-embed — not this branch
 - Grade is an extra chat call when a key is configured
+
+## Ragged Testing verification (2026-09-18 ~22:00 ET)
+
+- **UAT (Ragged QA, Mac):** full `tests/uat` — **24 passed**, 1 skipped; focused `test_uat_query_rewrite.py` — **PASSED**
+- **Dogfood (Ragged Dogfood, Mac):** `test_dogfood_query_rewrite.py` — **PASSED** (follow-up review/strongest-hypotheses → body sources, no PubMed in source text); `test_dogfood_junk_filter.py` canned empty sources — **PASSED**
+- **Gate:** **PASS** — no open product bugs on this feature
