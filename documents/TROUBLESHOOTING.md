@@ -62,9 +62,12 @@ The refusal with `200` means retrieval retained no source chunks.
 
 RAGged does not search other threads or vectorized chat history and does not answer from general knowledge.
 
-## Query returns `400`
+## Query says `Answer based on SOURCES.`
 
-The selected final-answer provider has no usable user or operator API key. Open **API keys**, configure the selected provider, or set its environment fallback.
+Retrieval found sources, but the selected final-answer provider has no usable
+user or operator API key. The current API returns this placeholder with
+`200` and leaves the sources attached. Open **API keys**, configure the
+selected provider, or set its environment fallback.
 
 Rewrite failures do not produce this status; rewrite is best effort and falls back to original-query retrieval.
 

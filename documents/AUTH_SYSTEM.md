@@ -28,7 +28,11 @@ The application connects to PostgreSQL with one server credential. Isolation is 
 
 ## Browser request protection
 
-`OriginAllowlistMiddleware` checks state-changing requests against `PUBLIC_ORIGINS`. Configure the exact public HTTPS origin in production. Wildcard and empty public-origin settings are rejected at startup.
+`OriginAllowlistMiddleware` checks state-changing requests against
+`PUBLIC_ORIGINS` when an `Origin` header is present. Registration and login
+are exempt; their credential validation is the intended gate. Configure the
+exact public HTTPS origin in production. Wildcard and empty public-origin
+settings are rejected at startup.
 
 CORS is disabled when `CORS_ORIGINS` is empty. For a separately hosted trusted frontend, configure an explicit allowlist; credentialed wildcard CORS is not supported.
 

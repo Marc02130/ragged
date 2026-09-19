@@ -79,7 +79,15 @@ Sources are stored with assistant messages and returned by both message endpoint
 
 When retrieval returns no chunks, RAGged stores the question and a canned refusal with an empty source list. It does not answer from general knowledge and does not vectorize the conversation. See [NO_RESULTS_HANDLING_GUIDE.md](NO_RESULTS_HANDLING_GUIDE.md).
 
-A configured-provider/key problem during final answer generation returns `400`. Provider transport errors other than missing-key errors are not converted into a custom API response.
+If retrieval has hits but the selected provider has no usable user or operator
+key, the current implementation returns the literal placeholder
+`Answer based on SOURCES.` with the retrieved sources attached. This is a
+successful `200`, not the canned no-results refusal. Configure a key before
+relying on generated answers.
+
+If a provider key is available but the provider rejects it or a provider
+transport call fails during final generation, the exception is not converted
+into a custom RAG response.
 
 ## Implementation references
 

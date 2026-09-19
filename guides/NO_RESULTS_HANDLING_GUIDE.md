@@ -25,7 +25,10 @@ This behavior keeps answers grounded in uploaded documents and prevents unsuppor
 
 Clients should use the normal response shape and treat an assistant message with no sources as uncited. The current web client renders the assistant text and only shows the sources section when sources exist.
 
-Do not infer “no results” solely from HTTP status: successful refusals use `200`. Conversely, a `400` can indicate that the selected provider has no usable API key during answer generation; that is not a no-results response.
+Do not infer “no results” solely from HTTP status: successful refusals use
+`200`. A query that has retrieved sources but no usable key also returns `200`;
+its assistant content is the placeholder `Answer based on SOURCES.` and its
+sources remain attached. That is not a no-results response.
 
 ## Diagnosing unexpected refusals
 

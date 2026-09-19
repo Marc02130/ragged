@@ -17,6 +17,8 @@ docker compose up --build
 Open **http://localhost:8080/**. Register, paste keys under **API keys**, create a thread, upload a file, ask a question.
 
 Health: `GET http://localhost:8080/api/health` → `{"status":"ok"}`.
+Readiness (including PostgreSQL): `GET http://localhost:8080/api/ready` →
+`{"status":"ok"}`.
 
 Compose builds `DATABASE_URL` from `POSTGRES_*`. Do not set `DATABASE_URL`, `VITE_*`, or `NEXT_PUBLIC_*`.
 

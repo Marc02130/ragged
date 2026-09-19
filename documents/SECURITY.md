@@ -22,7 +22,10 @@ PostgreSQL is accessed by the API service account. The current schema does not u
 
 ## CSRF and CORS
 
-State-changing methods are checked against `PUBLIC_ORIGINS` by `OriginAllowlistMiddleware`. Configure only exact trusted origins. Startup rejects an empty list or wildcard.
+State-changing methods are checked against `PUBLIC_ORIGINS` by
+`OriginAllowlistMiddleware` when the request has an `Origin` header.
+Registration and login are exempt. Configure only exact trusted origins;
+startup rejects an empty list or wildcard.
 
 CORS is off by default. If enabled, `CORS_ORIGINS` must be an explicit allowlist and requests can include credentials. Do not use `*`.
 

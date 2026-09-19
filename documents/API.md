@@ -2,7 +2,9 @@
 
 All routes are under `/api`. The browser uses same-origin requests and an HTTP-only `ragged_session` cookie. JSON requests with a body use `Content-Type: application/json`; uploads use multipart form data.
 
-Except for registration, login, health, and readiness, routes require a valid session cookie. A missing or invalid session returns `401`. Access to an unknown or another user's thread is deliberately reported as `404`.
+Except for registration, login, logout, health, and readiness, routes require
+a valid session cookie. A missing or invalid session returns `401`. Access to
+an unknown or another user's thread is deliberately reported as `404`.
 
 ## Health
 
@@ -171,7 +173,10 @@ Content length is 1–8000 characters. Returns:
 
 The server controls rewrite, retrieval, provider model, temperature, and result limits. No cross-thread, model, temperature, or search-strategy request options are accepted.
 
-No retrieval results is a successful `200` containing a saved canned refusal. A missing key for the selected final-answer provider returns `400`.
+No retrieval results is a successful `200` containing a saved canned refusal.
+If retrieval succeeds but the selected provider has no usable user or operator
+key, the current implementation instead returns `200` with assistant content
+`Answer based on SOURCES.` and the retrieved sources attached.
 
 ## LLM settings
 
