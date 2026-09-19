@@ -1,5 +1,11 @@
 # Enhanced Authentication System Implementation Summary
 
+> **Historical / superseded summary.** The completed work described below
+> belonged to the former Supabase implementation and is not present in the
+> current runtime. Current authentication is application-managed
+> email/password plus an HTTP-only JWT cookie; see
+> [`documents/AUTH_SYSTEM.md`](../../documents/AUTH_SYSTEM.md).
+
 ## ✅ **Completed Enhancements**
 
 ### 1. **Database Schema Updates**

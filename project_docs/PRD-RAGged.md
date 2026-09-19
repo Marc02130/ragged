@@ -1,5 +1,12 @@
 # Trimmed Product Requirements Document (PRD): Simple RAG App
 
+> **Historical / superseded product concept.** This PRD records the original
+> Supabase/OpenAI design and is not a description of shipped behavior. The
+> current Compose application deliberately omits cross-thread retrieval,
+> chat-history vectorization, deletion archives, OAuth, and client-selected
+> model controls. See [`README.md`](../README.md) and
+> [`documents/API.md`](../documents/API.md) for the current product.
+
 ## Overview
 This PRD outlines a Retrieval-Augmented Generation (RAG) application enabling users to upload documents, vectorize them, and query via chat in threaded conversations. The app supports multiple threads per user, with secure, scoped storage and processing. It emphasizes modularity for future extensions and basic privacy/compliance (e.g., user-scoped data isolation, consent for deletions).
 

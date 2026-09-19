@@ -1,3 +1,8 @@
+> **Historical prompt archive.** These prompts generated the original
+> Supabase/Deno design documents. They are not setup instructions and do not
+> describe the current FastAPI/Compose application. See
+> [`README.md`](../README.md) for current behavior.
+
 ```
 # Example Prompts for Building a Simple RAG App (Updated)
 

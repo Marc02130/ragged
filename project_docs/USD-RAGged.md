@@ -1,5 +1,11 @@
 # User Story Document: Simple RAG App
 
+> **Historical requirements artifact.** These stories include unshipped
+> Supabase, OAuth, vectorized-chat, and deletion-archive behavior. They remain
+> useful as original intent, but acceptance criteria here must not be treated
+> as current product documentation. See [`README.md`](../README.md) and
+> [`documents/API.md`](../documents/API.md).
+
 ## Introduction
 This document outlines key user stories based on the PRD, formatted as: **As a [user], I want [feature] so that [benefit].** Each includes acceptance criteria and technical notes for alignment with the TDD.
 

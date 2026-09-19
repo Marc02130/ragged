@@ -1,5 +1,12 @@
 # Technical Design Document (TDD): Simple RAG App
 
+> **Historical / superseded design.** This is the original Supabase Edge
+> Functions blueprint, not the current architecture. RAGged now runs FastAPI,
+> Webpack React, and PostgreSQL/pgvector under Docker Compose. Use
+> [`README.md`](../README.md), [`documents/API.md`](../documents/API.md), and
+> [`guides/INTEGRATION_GUIDE.md`](../guides/INTEGRATION_GUIDE.md) for current
+> behavior.
+
 ## 1. Introduction
 ### 1.1 Purpose
 This Technical Design Document (TDD) provides a detailed blueprint for implementing the Simple RAG App based on the Product Requirements Document (PRD). It covers system architecture, data models, APIs, workflows, and implementation considerations. The focus is on modularity, security, and scalability for a user-centric RAG system supporting document uploads, vectorization, and threaded chat queries.

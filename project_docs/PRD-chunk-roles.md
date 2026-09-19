@@ -1,6 +1,6 @@
 # PRD: Chunk roles for retrieval
 
-**Status:** Draft  
+**Status:** Shipped (roles now act as boosts; citation/boilerplate remain default exclusions)
 **Date:** 2026-09-17  
 **Branch:** `feat/chunk-roles`
 

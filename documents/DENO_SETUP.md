@@ -1,5 +1,14 @@
 # Deno Configuration for Supabase Edge Functions
 
+> **Historical / superseded:** This document describes an abandoned Supabase
+> Edge Functions prototype. The current application does not contain a
+> `supabase/` tree and does not use Deno at runtime. Use the Docker Compose
+> quick start in [`README.md`](../README.md), the current deployment guide in
+> [`guides/DEPLOYMENT_GUIDE.md`](../guides/DEPLOYMENT_GUIDE.md), and the
+> FastAPI reference in [`documents/API.md`](API.md). Commands below are
+> retained only as historical design context and must not be used to deploy
+> the current application.
+
 ## Overview
 
 This document explains how to use `deno.json` configuration files to manage imports and dependencies in Supabase Edge Functions, resolving TypeScript linter errors and providing better development experience.

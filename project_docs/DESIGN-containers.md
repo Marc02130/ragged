@@ -1,5 +1,15 @@
 # RAGged Container Conversion Design Document
 
+> **Status update (2026-09-19): Shipped with later changes.** The conversion
+> landed under `api/`, `web/`, `docker-compose.yml`, and Alembic migrations.
+> This document remains the historical conversion design, not a current
+> operator reference. Notable post-design changes include local 384-d MiniLM
+> embeddings, named upload volumes, OpenAI/xAI/Anthropic chat providers,
+> sequential UI uploads, and the retrieval pipeline documented in
+> [`guides/RAG_QUERY_GUIDE.md`](../guides/RAG_QUERY_GUIDE.md). Current setup
+> and API behavior live in [`README.md`](../README.md) and
+> [`documents/API.md`](../documents/API.md).
+
 ## Title & Metadata
 
 | Field | Value |
