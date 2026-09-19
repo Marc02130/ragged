@@ -80,10 +80,10 @@ def test_messages_router_forbids_client_model_and_cross_thread() -> None:
     rag = (ROOT / "api" / "app" / "services" / "rag.py").read_text()
     prompts = (ROOT / "api" / "app" / "prompts.py").read_text()
     combined = text + rag + prompts
-    assert ":candidate" in rag or "SIMILARITY_THRESHOLD" in rag
+    assert "relative_cut" in rag or "RELATIVE_SCORE_MARGIN" in rag
     from app.config import settings as app_settings
 
-    assert app_settings.SIMILARITY_THRESHOLD == 0.4
+    assert app_settings.RELATIVE_SCORE_MARGIN == 0.15
     assert "I don't have that in your documents." in combined
 
 

@@ -6,7 +6,7 @@ This is a Compose app: FastAPI (`api/`), Webpack React (`web/`), Postgres/pgvect
 
 ## Quick start
 
-Prerequisites: Docker. A chat API key (OpenAI, [xAI/Grok](https://console.x.ai), or [Anthropic](https://console.anthropic.com)) is needed to **answer** questions. Uploads embed on-server with a local MiniLM model and do not need a cloud key.
+Prerequisites: Docker. A chat API key (OpenAI, [xAI/Grok](https://console.x.ai), or [Anthropic](https://console.anthropic.com)) is needed to **answer** questions (and to rewrite follow-ups into the thread’s vocabulary). Uploads embed on-server with a local MiniLM model and do not need a cloud key.
 
 ```bash
 cp .env.example .env

@@ -54,10 +54,20 @@ _DOI = re.compile(r"\bdoi\.org\b|\b10\.\d{4,}/", re.I)
 _ET_AL = re.compile(r"\bet al\.?\b", re.I)
 _HTTP = re.compile(r"https?://", re.I)
 _YEAR_CITE = re.compile(r"\([A-Z][A-Za-z\-]+,?\s+\d{4}\)")
+_PUBMED = re.compile(r"\[pubmed:|\bpmid:\s*\d+", re.I)
+_JOURNAL_CITE = re.compile(
+    r"\b(j |mol |curr |aging |neurosci |alzheimer).{0,40}\d{4}[;:]",
+    re.I,
+)
+_NUMBERED_REF_HEAD = re.compile(
+    r"^\d+\s*\.?\s+[A-Z][A-Za-z\-]+.+(?:\d{4}|alzheimer|microbiome|gut)",
+    re.I,
+)
+_ZWSP = dict.fromkeys(map(ord, "\u200b\u200c\u200d\ufeff"), None)
 
 
 def _norm(text: str) -> str:
-    return (text or "").lower()
+    return (text or "").translate(_ZWSP).lower()
 
 
 def classify_chunk(text: str, heading: str = "") -> str:
@@ -67,11 +77,17 @@ def classify_chunk(text: str, heading: str = "") -> str:
 
     if any(k in head for k in ("reference", "bibliograph", "works cited", "literature cited")):
         return "citation"
+    if _NUMBERED_REF_HEAD.search(heading.strip()):
+        return "citation"
     if any(k in head for k in ("acknowledg", "funding", "competing interest", "conflict of interest", "data availability")):
         return "boilerplate"
-    if _DOI.search(blob) or (len(_ET_AL.findall(blob)) >= 3 and len(text) < 2500):
+    if _DOI.search(blob) or _DOI.search(low) or _PUBMED.search(low):
+        return "citation"
+    if len(_ET_AL.findall(blob)) >= 3 and len(text) < 2500:
         return "citation"
     if low.startswith("http") or (len(_HTTP.findall(blob)) >= 3 and "we found" not in low):
+        return "citation"
+    if len(_JOURNAL_CITE.findall(low)) >= 2 and len(text) < 2500:
         return "citation"
     if any(k in low for k in ("graphpad prism", "bonferroni", "kruskal-wallis", "mann-whitney")) and not any(
         k in low for k in ("we found", "showed that", "associated with")
@@ -172,9 +188,10 @@ def preferred_roles(question: str) -> frozenset[str]:
 
 
 def excluded_roles(question: str) -> frozenset[str]:
-    """Hard-drop citation/boilerplate unless the user asked for them."""
+    """Hard-drop citation/boilerplate unless asked. Never drop method or experience."""
     wanted = classify_query(question)
-    return frozenset(r for r in EXCLUDE_DEFAULT if r not in wanted)
+    dropped = frozenset(r for r in EXCLUDE_DEFAULT if r not in wanted)
+    return dropped - {"method", "experience"}
 
 
 def allowed_roles(question: str) -> frozenset[str]:
@@ -182,6 +199,9 @@ def allowed_roles(question: str) -> frozenset[str]:
 
 
 def resolve_role(text: str, heading: str, stored: str | None) -> str:
+    live = classify_chunk(text, heading)
+    if live in EXCLUDE_DEFAULT:
+        return live
     if stored in ROLES:
         return stored
-    return classify_chunk(text, heading)
+    return live
