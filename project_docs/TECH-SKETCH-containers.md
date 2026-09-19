@@ -1,5 +1,12 @@
 # RAGged Container Conversion — Tech Sketch
 
+> **Status update (2026-09-19): Shipped with later changes.** This is the
+> historical conversion sketch. The implementation uses named volumes and
+> local 384-d MiniLM embeddings and now supports OpenAI, xAI, and Anthropic
+> chat providers. Verify current topology and configuration in
+> [`docker-compose.yml`](../docker-compose.yml), [`README.md`](../README.md),
+> and [`api/app/config.py`](../api/app/config.py).
+
 **Author:** Engineering  
 **Date:** 2026-09-14  
 **Status:** Draft  

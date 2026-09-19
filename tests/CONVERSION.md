@@ -4,7 +4,9 @@ Run results: see `tests/results/`.
 
 Three layers, ten slices. Default `pytest` runs **unit** only.
 
-The legacy Vitest suite (`tests/unit/*.ts`, `tests/integration`, `tests/e2e`) is documented in `tests/README.md` and is not this tree. It goes away in slice 10.
+The legacy Vitest/Supabase suite (`tests/unit/*.ts`, `tests/integration`,
+`tests/e2e`) was removed in slice 10. Historical setup discussions remain
+under `ai_chats/`; they are not instructions for this suite.
 
 | Layer | Command | What it is |
 | --- | --- | --- |
@@ -34,7 +36,9 @@ UAT and dogfood need Docker. They copy `.env.example` → `.env` if missing, the
 
 Filenames are unique per layer (`test_unit_slice01_…`, `test_uat_slice01_…`, `test_dogfood_slice01_…`) so pytest can collect all three.
 
-Slice 1 tests run now. Slices 2–10 skip until their files land (`skipif` on the slice artifact). Unskip is automatic.
+All slice artifacts have landed. The table below records the `skipif` artifact
+each conversion test used while the migration was in progress; it remains
+useful when running the suite against an older conversion commit.
 
 | Slice | Artifact that unskips tests |
 | --- | --- |

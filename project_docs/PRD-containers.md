@@ -1,5 +1,11 @@
 # RAGged Container Conversion — PRD
 
+> **Status update (2026-09-19): Shipped with later changes.** The Compose,
+> FastAPI, Webpack React, and PostgreSQL conversion is implemented. This file
+> is retained as the requirements artifact; current behavior and post-design
+> changes are documented in [`README.md`](../README.md) and
+> [`documents/API.md`](../documents/API.md).
+
 **Author:** Engineering  
 **Date:** 2026-09-14  
 **Status:** Draft  

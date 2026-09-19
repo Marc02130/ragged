@@ -1,6 +1,6 @@
 # Tech spec: Chunk roles
 
-**Status:** Draft  
+**Status:** Shipped; query-path behavior was subsequently refined by `TECH-SPEC-query-rewrite.md`
 **Date:** 2026-09-17
 
 Query-path follow-up (rewrite, relative cutoff, citation override) is in `TECH-SPEC-query-rewrite.md`. Roles are a **boost** there; citation/boilerplate remain a hard drop.

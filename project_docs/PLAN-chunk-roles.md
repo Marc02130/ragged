@@ -1,5 +1,10 @@
 # Plan: Chunk roles
 
+**Status:** Shipped. Verified in `api/app/services/classify.py`,
+`api/app/services/rag.py`, and `api/app/routers/documents.py`. The later query
+rewrite work changed non-citation role handling from hard allow-lists to
+ranking boosts.
+
 ## PR
 
 **Title:** feat(api): chunk roles so queries skip citations and boilerplate

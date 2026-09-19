@@ -1,5 +1,11 @@
 # Complete Deployment Summary: RAG Application
 
+> **Historical / superseded summary.** This records the former Supabase CLI,
+> Edge Functions, Storage, and RLS deployment design. It is not a deployment
+> guide for the current application. Use
+> [`guides/DEPLOYMENT_GUIDE.md`](../../guides/DEPLOYMENT_GUIDE.md) for the
+> supported Docker Compose deployment.
+
 ## Overview
 
 This document provides a comprehensive summary of the RAG application deployment, including Supabase CLI instructions, Edge Functions, custom tables with RLS, detailed deletion flow, and multiple thread handling as specified in the PRD.

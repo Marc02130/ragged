@@ -1,5 +1,11 @@
 # RAGged Container Conversion — Plan
 
+> **Status update (2026-09-19): Shipped.** The ordered conversion slices are
+> implemented under `api/`, `web/`, Compose, and `tests/`. This plan is kept
+> as implementation history; commands and pinned values inside it can differ
+> from the current system. Use [`README.md`](../README.md) and
+> [`documents/API.md`](../documents/API.md) for current behavior.
+
 **Author:** Engineering  
 **Date:** 2026-09-14  
 **Status:** Draft  
